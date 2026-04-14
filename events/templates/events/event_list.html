@@ -1,0 +1,85 @@
+{% extends "events/base.html" %}
+
+{% block title %}Events{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Events</h2>
+        {% if user.is_staff %}
+        <a href="{% url 'create_event' %}" class="btn btn-accent"><i class="bi bi-plus-lg me-1"></i>Create Event</a>
+        {% endif %}
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" placeholder="Search events..." value="{{ query }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.slug }}" {% if current_category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Show</label>
+                    <select name="show" class="form-select">
+                        <option value="upcoming" {% if current_show == "upcoming" %}selected{% endif %}>Upcoming</option>
+                        <option value="past" {% if current_show == "past" %}selected{% endif %}>Past</option>
+                        <option value="all" {% if current_show == "all" %}selected{% endif %}>All</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Grid -->
+    {% if events %}
+    <div class="row g-4">
+        {% for event in events %}
+        <div class="col-md-4">
+            <div class="card card-event h-100">
+                <div class="card-body d-flex flex-column">
+                    {% if event.category %}
+                    <span class="badge bg-primary mb-2 align-self-start">{{ event.category.name }}</span>
+                    {% endif %}
+                    <h5 class="card-title">{{ event.title }}</h5>
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-calendar me-1"></i>{{ event.date|date:"M d, Y g:i A" }}<br>
+                        <i class="bi bi-geo-alt me-1"></i>{{ event.location }}
+                    </p>
+                    <p class="card-text flex-grow-1">{{ event.description|truncatewords:20 }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                        <div>
+                            <span class="fw-bold text-primary">${{ event.price }}</span>
+                            {% if event.is_sold_out %}
+                            <span class="badge bg-danger ms-2">Sold Out</span>
+                            {% else %}
+                            <span class="text-muted small ms-2">{{ event.tickets_remaining }} left</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'event_detail' event.slug %}" class="btn btn-accent btn-sm">Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+        <p class="text-muted mt-3">No events found matching your criteria.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

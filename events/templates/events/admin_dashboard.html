@@ -1,0 +1,140 @@
+{% extends "events/base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4"><i class="bi bi-bar-chart me-2"></i>Event Reporting &amp; Sales Dashboard</h2>
+
+    <!-- Summary Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <h6 class="text-muted mb-1">Total Events</h6>
+                <h3 class="mb-0">{{ total_events }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <h6 class="text-muted mb-1">Active Events</h6>
+                <h3 class="mb-0">{{ active_events }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <h6 class="text-muted mb-1">Total Registrations</h6>
+                <h3 class="mb-0">{{ total_registrations }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <h6 class="text-muted mb-1">Total Revenue</h6>
+                <h3 class="mb-0">${{ total_revenue }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Status Breakdown -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0">Registrations by Status</h5></div>
+                <div class="card-body">
+                    {% for item in status_counts %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>
+                            <span class="badge bg-{% if item.status == 'confirmed' %}success{% elif item.status == 'pending' %}warning{% else %}secondary{% endif %} me-2">
+                                {{ item.status|title }}
+                            </span>
+                        </span>
+                        <strong>{{ item.count }}</strong>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No registrations yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0">Events Performance</h5></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Date</th>
+                                    <th>Registrations</th>
+                                    <th>Revenue</th>
+                                    <th>Capacity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in events_with_stats %}
+                                <tr>
+                                    <td><a href="{% url 'event_detail' event.slug %}">{{ event.title }}</a></td>
+                                    <td>{{ event.date|date:"M d, Y" }}</td>
+                                    <td>{{ event.reg_count }}</td>
+                                    <td>${{ event.revenue|default:"0" }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            {% widthratio event.reg_count event.capacity 100 as pct %}
+                                            <div class="progress-bar bg-primary" style="width: {{ pct }}%">{{ pct }}%</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-muted">No events yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Registrations -->
+    <div class="card">
+        <div class="card-header"><h5 class="mb-0">Recent Registrations</h5></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>User</th>
+                            <th>Event</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in recent_registrations %}
+                        <tr>
+                            <td><code>{{ reg.confirmation_code }}</code></td>
+                            <td>{{ reg.user.get_full_name|default:reg.user.username }}</td>
+                            <td>{{ reg.event.title }}</td>
+                            <td>{{ reg.quantity }}</td>
+                            <td>${{ reg.total_price }}</td>
+                            <td>
+                                <span class="badge bg-{% if reg.status == 'confirmed' %}success{% elif reg.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                    {{ reg.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ reg.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-muted">No registrations yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

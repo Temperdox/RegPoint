@@ -1,0 +1,118 @@
+{% extends "events/base.html" %}
+
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4">My Dashboard</h2>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card p-3">
+                <h6 class="text-muted mb-1">Total Registrations</h6>
+                <h3 class="mb-0">{{ total_registrations }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card p-3">
+                <h6 class="text-muted mb-1">Upcoming Events</h6>
+                <h3 class="mb-0">{{ upcoming_regs|length }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card p-3">
+                <h6 class="text-muted mb-1">Total Spent</h6>
+                <h3 class="mb-0">${{ total_spent }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Registrations -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Upcoming Registrations</h5>
+        </div>
+        <div class="card-body">
+            {% if upcoming_regs %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Date</th>
+                            <th>Ticket</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Code</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in upcoming_regs %}
+                        <tr>
+                            <td><a href="{% url 'event_detail' reg.event.slug %}">{{ reg.event.title }}</a></td>
+                            <td>{{ reg.event.date|date:"M d, Y" }}</td>
+                            <td>{{ reg.ticket_type.name|default:"General" }}</td>
+                            <td>{{ reg.quantity }}</td>
+                            <td>${{ reg.total_price }}</td>
+                            <td>
+                                <span class="badge bg-{% if reg.status == 'confirmed' %}success{% elif reg.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                    {{ reg.get_status_display }}
+                                </span>
+                            </td>
+                            <td><code>{{ reg.confirmation_code }}</code></td>
+                            <td>
+                                <a href="{% url 'registration_detail' reg.confirmation_code %}" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No upcoming registrations. <a href="{% url 'event_list' %}">Browse events</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Past Registrations -->
+    {% if past_regs %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Past Registrations</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Date</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Code</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in past_regs %}
+                        <tr>
+                            <td>{{ reg.event.title }}</td>
+                            <td>{{ reg.event.date|date:"M d, Y" }}</td>
+                            <td>{{ reg.quantity }}</td>
+                            <td>${{ reg.total_price }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ reg.get_status_display }}</span>
+                            </td>
+                            <td><code>{{ reg.confirmation_code }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "events/base.html" %}
+
+{% block title %}Registration {{ registration.confirmation_code }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white text-center">
+                    <i class="bi bi-check-circle fs-1 d-block mb-2"></i>
+                    <h4 class="mb-0">Registration Confirmed</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h6 class="text-muted">Confirmation Code</h6>
+                        <h2 class="font-monospace">{{ registration.confirmation_code }}</h2>
+                    </div>
+                    <hr>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Event</dt>
+                        <dd class="col-sm-7"><a href="{% url 'event_detail' registration.event.slug %}">{{ registration.event.title }}</a></dd>
+
+                        <dt class="col-sm-5">Date</dt>
+                        <dd class="col-sm-7">{{ registration.event.date|date:"F d, Y g:i A" }}</dd>
+
+                        <dt class="col-sm-5">Location</dt>
+                        <dd class="col-sm-7">{{ registration.event.location }}</dd>
+
+                        <dt class="col-sm-5">Ticket Type</dt>
+                        <dd class="col-sm-7">{{ registration.ticket_type.name|default:"General" }}</dd>
+
+                        <dt class="col-sm-5">Quantity</dt>
+                        <dd class="col-sm-7">{{ registration.quantity }}</dd>
+
+                        <dt class="col-sm-5">Total Price</dt>
+                        <dd class="col-sm-7">${{ registration.total_price }}</dd>
+
+                        <dt class="col-sm-5">Status</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-{% if registration.status == 'confirmed' %}success{% elif registration.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                {{ registration.get_status_display }}
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-5">Registered On</dt>
+                        <dd class="col-sm-7">{{ registration.created_at|date:"F d, Y g:i A" }}</dd>
+                    </dl>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">Back to Dashboard</a>
+                    {% if registration.status != 'cancelled' and registration.event.is_upcoming %}
+                    <a href="{% url 'cancel_registration' registration.confirmation_code %}" class="btn btn-outline-danger">Cancel</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

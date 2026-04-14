@@ -1,0 +1,107 @@
+{% extends "events/base.html" %}
+
+{% block title %}{{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'event_list' %}">Events</a></li>
+            <li class="breadcrumb-item active">{{ event.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    {% if event.category %}
+                    <span class="badge bg-primary mb-3">{{ event.category.name }}</span>
+                    {% endif %}
+                    <h1 class="mb-3">{{ event.title }}</h1>
+
+                    <div class="row mb-4">
+                        <div class="col-sm-6">
+                            <p class="mb-1"><i class="bi bi-calendar me-2 text-primary"></i><strong>Date:</strong> {{ event.date|date:"F d, Y g:i A" }}</p>
+                            {% if event.end_date %}
+                            <p class="mb-1"><i class="bi bi-calendar-check me-2 text-primary"></i><strong>Ends:</strong> {{ event.end_date|date:"F d, Y g:i A" }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="mb-1"><i class="bi bi-geo-alt me-2 text-primary"></i><strong>Location:</strong> {{ event.location }}</p>
+                            <p class="mb-1"><i class="bi bi-person me-2 text-primary"></i><strong>Organizer:</strong> {{ event.created_by.get_full_name|default:event.created_by.username }}</p>
+                        </div>
+                    </div>
+
+                    <h5>About This Event</h5>
+                    <p>{{ event.description|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Ticket Info -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>Tickets</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Base Price:</strong> ${{ event.price }}</p>
+                    <p class="mb-2"><strong>Capacity:</strong> {{ event.capacity }}</p>
+                    <p class="mb-3">
+                        <strong>Availability:</strong>
+                        {% if event.is_sold_out %}
+                        <span class="badge bg-danger">Sold Out</span>
+                        {% else %}
+                        <span class="text-success">{{ event.tickets_remaining }} tickets remaining</span>
+                        {% endif %}
+                    </p>
+
+                    {% if event.ticket_types.all %}
+                    <h6>Ticket Types</h6>
+                    <ul class="list-group list-group-flush mb-3">
+                        {% for tt in event.ticket_types.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            {{ tt.name }}
+                            <span class="badge bg-primary rounded-pill">${{ tt.price }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+
+                    {% if user_registration %}
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        You're registered!<br>
+                        <small>Code: <strong>{{ user_registration.confirmation_code }}</strong></small><br>
+                        <a href="{% url 'registration_detail' user_registration.confirmation_code %}" class="btn btn-sm btn-outline-success mt-2">View Registration</a>
+                    </div>
+                    {% elif registration_form %}
+                    <form method="post" action="{% url 'register_for_event' event.slug %}">
+                        {% csrf_token %}
+                        {% for field in registration_form %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-accent w-100">
+                            <i class="bi bi-cart-check me-1"></i>Register Now
+                        </button>
+                    </form>
+                    {% elif not user.is_authenticated %}
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-accent w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Login to Register
+                    </a>
+                    {% elif not event.is_upcoming %}
+                    <div class="alert alert-secondary mb-0">This event has already passed.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
