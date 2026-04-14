@@ -5,43 +5,168 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <h3 class="mb-4"><i class="bi bi-person-gear me-2"></i>Edit Profile</h3>
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">First Name</label>
-                                {{ form.first_name }}
-                                {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors.0 }}</div>{% endif %}
+        <div class="col-md-8">
+            <div class="row g-4">
+                <!-- Profile Form -->
+                <div class="col-md-7">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h3 class="mb-4"><i class="bi bi-person-gear me-2"></i>Edit Profile</h3>
+
+                            <!-- Avatar -->
+                            <div class="text-center mb-4">
+                                {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle mb-2" style="width:100px;height:100px;object-fit:cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-2" style="width:100px;height:100px;">
+                                    <span class="text-white display-6">{{ user.first_name|first|default:user.username|first|upper }}</span>
+                                </div>
+                                {% endif %}
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Last Name</label>
-                                {{ form.last_name }}
-                                {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors.0 }}</div>{% endif %}
+
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label">Profile Picture</label>
+                                    {{ form.avatar }}
+                                    {% if form.avatar.errors %}<div class="text-danger small">{{ form.avatar.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">First Name</label>
+                                        {{ form.first_name }}
+                                        {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors.0 }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Last Name</label>
+                                        {{ form.last_name }}
+                                        {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors.0 }}</div>{% endif %}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Phone</label>
+                                    {{ form.phone }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Company</label>
+                                    {{ form.company }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Bio</label>
+                                    {{ form.bio }}
+                                </div>
+                                <button type="submit" class="btn btn-accent w-100">Save Changes</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security & MFA Panel -->
+                <div class="col-md-5">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Security</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">Multi-Factor Authentication</h6>
+
+                            <!-- TOTP (Authenticator App) -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <i class="bi bi-phone me-2 text-primary"></i>
+                                    <strong>Authenticator App</strong><br>
+                                    <small class="text-muted">Google/Microsoft Authenticator, Authy</small>
+                                </div>
+                                <a href="{% url 'mfa_activate_totp' %}" class="btn btn-sm btn-outline-primary">Setup</a>
+                            </div>
+
+                            <!-- WebAuthn / Passkeys -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <i class="bi bi-fingerprint me-2 text-primary"></i>
+                                    <strong>Passkeys</strong><br>
+                                    <small class="text-muted">Biometric, security key</small>
+                                </div>
+                                <a href="{% url 'mfa_list_webauthn' %}" class="btn btn-sm btn-outline-primary">Manage</a>
+                            </div>
+
+                            <!-- Email OTP -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <i class="bi bi-envelope me-2 text-primary"></i>
+                                    <strong>Email Verification</strong><br>
+                                    <small class="text-muted">
+                                        {% if user.profile.email_otp_verified %}
+                                        <span class="text-success"><i class="bi bi-check-circle"></i> Verified</span>
+                                        {% else %}
+                                        Not verified
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <a href="{% url 'mfa_otp_setup' %}?channel=email" class="btn btn-sm btn-outline-primary">
+                                    {% if user.profile.email_otp_verified %}Re-verify{% else %}Verify{% endif %}
+                                </a>
+                            </div>
+
+                            <!-- SMS OTP -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <i class="bi bi-chat-dots me-2 text-primary"></i>
+                                    <strong>SMS Verification</strong><br>
+                                    <small class="text-muted">
+                                        {% if user.profile.sms_otp_verified %}
+                                        <span class="text-success"><i class="bi bi-check-circle"></i> Verified</span>
+                                        {% else %}
+                                        Not verified
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <a href="{% url 'mfa_otp_setup' %}?channel=sms" class="btn btn-sm btn-outline-primary">
+                                    {% if user.profile.sms_otp_verified %}Re-verify{% else %}Verify{% endif %}
+                                </a>
+                            </div>
+
+                            <!-- Recovery Codes -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-key me-2 text-primary"></i>
+                                    <strong>Recovery Codes</strong><br>
+                                    <small class="text-muted">Backup access codes</small>
+                                </div>
+                                <a href="{% url 'mfa_view_recovery_codes' %}" class="btn btn-sm btn-outline-primary">View</a>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            {{ form.email }}
-                            {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <!-- Connected Accounts -->
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Connected Accounts</h5>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Phone</label>
-                            {{ form.phone }}
+                        <div class="card-body">
+                            <a href="{% url 'socialaccount_connections' %}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="bi bi-gear me-1"></i>Manage Connected Accounts
+                            </a>
+                            <p class="text-muted small mb-0">Link Google, Microsoft, or GitHub for single sign-on.</p>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Company</label>
-                            {{ form.company }}
+                    </div>
+
+                    <!-- Account Actions -->
+                    <div class="card shadow-sm mt-4">
+                        <div class="card-body">
+                            <a href="{% url 'account_change_password' %}" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="bi bi-lock me-1"></i>Change Password
+                            </a>
+                            <a href="{% url 'account_email' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-envelope me-1"></i>Manage Email Addresses
+                            </a>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Bio</label>
-                            {{ form.bio }}
-                        </div>
-                        <button type="submit" class="btn btn-accent w-100">Save Changes</button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>

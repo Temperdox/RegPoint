@@ -46,20 +46,30 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'admin_dashboard' %}">Reports</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'create_event' %}">Create Event</a></li>
                     {% endif %}
+                    {% if user.is_superuser %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'admin_manage_users' %}">Users</a></li>
+                    {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i>{{ user.get_full_name|default:user.username }}
+                            {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="" class="rounded-circle me-1" style="width:24px;height:24px;object-fit:cover;">
+                            {% else %}
+                            <i class="bi bi-person-circle me-1"></i>
+                            {% endif %}
+                            {{ user.get_full_name|default:user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-gear me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>Profile</a></li>
                             <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="bi bi-grid me-2"></i>Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'account_settings' %}"><i class="bi bi-gear me-2"></i>Account Settings</a></li>
+                            <li><a class="dropdown-item" href="{% url 'socialaccount_connections' %}"><i class="bi bi-link-45deg me-2"></i>Connected Accounts</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form method="post" action="{% url 'logout' %}">
+                                <form method="post" action="{% url 'account_logout' %}">
                                     {% csrf_token %}
                                     <button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
                                 </form>
@@ -67,8 +77,8 @@
                         </ul>
                     </li>
                     {% else %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-                    <li class="nav-item"><a class="btn btn-accent btn-sm ms-2 mt-1" href="{% url 'signup' %}">Sign Up</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'account_login' %}">Login</a></li>
+                    <li class="nav-item"><a class="btn btn-accent btn-sm ms-2 mt-1" href="{% url 'account_signup' %}">Sign Up</a></li>
                     {% endif %}
                 </ul>
             </div>

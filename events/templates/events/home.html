@@ -9,7 +9,7 @@
         <p class="lead mb-4">Nexbridge Marketing Group's online event registration platform.<br>Discover events, register with ease, and manage your tickets in one place.</p>
         <a href="{% url 'event_list' %}" class="btn btn-light btn-lg me-2">Browse Events</a>
         {% if not user.is_authenticated %}
-        <a href="{% url 'signup' %}" class="btn btn-outline-light btn-lg">Create Account</a>
+        <a href="{% url 'account_signup' %}" class="btn btn-outline-light btn-lg">Create Account</a>
         {% endif %}
     </div>
 </section>

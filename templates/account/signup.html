@@ -1,0 +1,86 @@
+{% extends "events/base.html" %}
+{% load socialaccount %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="text-center mb-4"><i class="bi bi-person-plus me-2"></i>Create Account</h3>
+
+                    <!-- Passkey Signup -->
+                    <div class="text-center mb-3">
+                        <a href="{% url 'mfa_signup_webauthn' %}" class="btn btn-outline-dark w-100">
+                            <i class="bi bi-fingerprint me-2"></i>Sign up with Passkey
+                        </a>
+                    </div>
+
+                    <hr>
+
+                    <!-- Social Signup Buttons -->
+                    <p class="text-center text-muted small mb-3">Or sign up with</p>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <a href="{% provider_login_url 'google' %}" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-google me-1"></i>Google
+                            </a>
+                        </div>
+                        <div class="col-4">
+                            <a href="{% provider_login_url 'microsoft' %}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-microsoft me-1"></i>Microsoft
+                            </a>
+                        </div>
+                        <div class="col-4">
+                            <a href="{% provider_login_url 'github' %}" class="btn btn-outline-dark w-100">
+                                <i class="bi bi-github me-1"></i>GitHub
+                            </a>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <p class="text-center text-muted small mb-3">Or create an account with email</p>
+
+                    <form method="post" action="{% url 'account_signup' %}">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                            {% if field.field.widget.input_type == "checkbox" %}
+                            <div class="form-check">
+                                <input type="checkbox" name="{{ field.html_name }}" class="form-check-input" id="id_{{ field.html_name }}" {% if field.value %}checked{% endif %}>
+                                <label class="form-check-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                            </div>
+                            {% else %}
+                            <input type="{{ field.field.widget.input_type|default:'text' }}"
+                                   name="{{ field.html_name }}"
+                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                   value="{{ field.value|default:'' }}"
+                                   placeholder="{{ field.label }}"
+                                   {% if field.field.widget.attrs.autocomplete %}autocomplete="{{ field.field.widget.attrs.autocomplete }}"{% endif %}>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-accent w-100 mb-3">Create Account</button>
+                    </form>
+
+                    <p class="text-center text-muted mb-0">
+                        Already have an account? <a href="{% url 'account_login' %}">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

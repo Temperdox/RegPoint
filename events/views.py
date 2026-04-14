@@ -3,7 +3,10 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.db.models import Count, Sum, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -11,13 +14,19 @@ from django.utils.text import slugify
 from django.views import View
 
 from .forms import (
+    AccountDeleteForm,
+    AccountRecoveryForm,
+    AdminUserRoleForm,
+    ChangeEmailForm,
+    ChangeUsernameForm,
+    EmailOTPForm,
     EventForm,
+    IdentityVerifyForm,
     RegistrationForm,
-    SignUpForm,
     TicketTypeForm,
     UserProfileForm,
 )
-from .models import Event, EventCategory, Registration, TicketType
+from .models import EmailOTP, Event, EventCategory, Registration, TicketType
 
 
 # --- Public Views ---
@@ -103,30 +112,78 @@ def event_detail(request, slug):
     return render(request, "events/event_detail.html", context)
 
 
-# --- Auth Views ---
+# --- Email/SMS OTP MFA Views ---
 
 
-def signup(request):
-    if request.method == "POST":
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.email = form.cleaned_data["email"]
-            user.first_name = form.cleaned_data["first_name"]
-            user.last_name = form.cleaned_data["last_name"]
-            user.save()
-            # Update profile (created by signal)
-            user.profile.phone = form.cleaned_data.get("phone", "")
-            user.profile.company = form.cleaned_data.get("company", "")
-            user.profile.security_question = form.cleaned_data["security_question"]
-            user.profile.security_answer = form.cleaned_data["security_answer"]
-            user.profile.save()
-            login(request, user)
-            messages.success(request, "Account created successfully! Welcome to RegPoint.")
-            return redirect("home")
+@login_required
+def mfa_otp_setup(request):
+    """Send an OTP code via email (or SMS) and redirect to verification."""
+    channel = request.GET.get("channel", "email")
+    if channel not in ("email", "sms"):
+        channel = "email"
+
+    otp = EmailOTP.generate(user=request.user, channel=channel)
+
+    if channel == "email":
+        from django.core.mail import send_mail
+
+        send_mail(
+            subject="RegPoint - Your verification code",
+            message=f"Your RegPoint verification code is: {otp.code}\n\nThis code expires in 10 minutes.",
+            from_email=None,
+            recipient_list=[request.user.email],
+            fail_silently=True,
+        )
+        messages.info(request, f"Verification code sent to {request.user.email}.")
     else:
-        form = SignUpForm()
-    return render(request, "events/signup.html", {"form": form})
+        # SMS placeholder - integrate with Twilio/SNS in production
+        messages.info(
+            request,
+            f"SMS verification code: {otp.code} (In production, this would be sent via SMS.)",
+        )
+
+    return redirect(f"{request.build_absolute_uri('/accounts/mfa/otp/verify/')}?channel={channel}")
+
+
+@login_required
+def mfa_otp_verify(request):
+    """Verify the submitted OTP code."""
+    channel = request.GET.get("channel", "email")
+
+    if request.method == "POST":
+        form = EmailOTPForm(request.POST)
+        if form.is_valid():
+            submitted_code = form.cleaned_data["code"]
+            otp = (
+                EmailOTP.objects.filter(
+                    user=request.user, channel=channel, is_used=False
+                )
+                .order_by("-created_at")
+                .first()
+            )
+            if otp and otp.verify(submitted_code):
+                # Mark the user's profile as having verified this channel
+                profile = request.user.profile
+                if channel == "email":
+                    profile.email_otp_verified = True
+                else:
+                    profile.sms_otp_verified = True
+                profile.save()
+                messages.success(
+                    request,
+                    f"{'Email' if channel == 'email' else 'SMS'} verification successful!",
+                )
+                return redirect("profile")
+            else:
+                messages.error(request, "Invalid or expired code. Please try again.")
+    else:
+        form = EmailOTPForm()
+
+    return render(
+        request,
+        "events/mfa_otp_verify.html",
+        {"form": form, "channel": channel},
+    )
 
 
 # --- User Dashboard ---
@@ -158,9 +215,11 @@ def dashboard(request):
 def profile(request):
     user_profile = request.user.profile
     if request.method == "POST":
-        form = UserProfileForm(request.POST, instance=user_profile, user=request.user)
+        form = UserProfileForm(
+            request.POST, request.FILES, instance=user_profile, user=request.user
+        )
         if form.is_valid():
-            profile_obj = form.save()
+            form.save()
             request.user.first_name = form.cleaned_data["first_name"]
             request.user.last_name = form.cleaned_data["last_name"]
             request.user.email = form.cleaned_data["email"]
@@ -355,4 +414,251 @@ def create_event(request):
         request,
         "events/create_event.html",
         {"form": form, "ticket_forms": ticket_forms},
+    )
+
+
+# --- Identity Verification Helper ---
+
+
+def _verify_identity(request, method, credential):
+    """Verify the user's identity via password or OTP. Returns True if valid."""
+    if method == "password":
+        return check_password(credential, request.user.password)
+    elif method in ("email_otp", "sms_otp"):
+        channel = "email" if method == "email_otp" else "sms"
+        otp = (
+            EmailOTP.objects.filter(
+                user=request.user, channel=channel, is_used=False
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        if otp and otp.verify(credential):
+            return True
+    return False
+
+
+# --- Account Settings ---
+
+
+@login_required
+def account_settings(request):
+    """Main account settings page."""
+    return render(request, "events/account_settings.html")
+
+
+@login_required
+def change_username(request):
+    if request.method == "POST":
+        form = ChangeUsernameForm(request.POST, current_user=request.user)
+        if form.is_valid():
+            request.user.username = form.cleaned_data["new_username"]
+            request.user.save()
+            messages.success(request, "Username updated successfully.")
+            return redirect("account_settings")
+    else:
+        form = ChangeUsernameForm(current_user=request.user)
+        form.fields["new_username"].initial = request.user.username
+    return render(request, "events/change_username.html", {"form": form})
+
+
+@login_required
+def change_email_request(request):
+    """Step 1: user requests to change email. Step 2: verify identity."""
+    # Check if already verified in this session
+    if request.session.get("identity_verified_for") == "change_email":
+        return redirect("change_email_confirm")
+
+    if request.method == "POST":
+        verify_form = IdentityVerifyForm(request.POST)
+        if verify_form.is_valid():
+            method = verify_form.cleaned_data["method"]
+            credential = verify_form.cleaned_data["credential"]
+            if _verify_identity(request, method, credential):
+                request.session["identity_verified_for"] = "change_email"
+                return redirect("change_email_confirm")
+            else:
+                messages.error(request, "Identity verification failed.")
+    else:
+        verify_form = IdentityVerifyForm()
+
+    return render(
+        request,
+        "events/verify_identity.html",
+        {
+            "form": verify_form,
+            "action_name": "Change Email",
+            "send_otp_url_email": "/accounts/mfa/otp/?channel=email",
+            "send_otp_url_sms": "/accounts/mfa/otp/?channel=sms",
+        },
+    )
+
+
+@login_required
+def change_email_confirm(request):
+    """Step 2: Actually change the email after identity verification."""
+    if request.session.get("identity_verified_for") != "change_email":
+        return redirect("change_email_request")
+
+    if request.method == "POST":
+        form = ChangeEmailForm(request.POST)
+        if form.is_valid():
+            request.user.email = form.cleaned_data["new_email"]
+            request.user.save()
+            # Clear verification
+            del request.session["identity_verified_for"]
+            messages.success(request, "Email updated successfully.")
+            return redirect("account_settings")
+    else:
+        form = ChangeEmailForm()
+        form.fields["new_email"].initial = request.user.email
+    return render(request, "events/change_email.html", {"form": form})
+
+
+@login_required
+def change_password_request(request):
+    """Verify identity before allowing password change."""
+    if request.session.get("identity_verified_for") == "change_password":
+        return redirect("account_change_password")
+
+    if request.method == "POST":
+        verify_form = IdentityVerifyForm(request.POST)
+        if verify_form.is_valid():
+            method = verify_form.cleaned_data["method"]
+            credential = verify_form.cleaned_data["credential"]
+            if _verify_identity(request, method, credential):
+                request.session["identity_verified_for"] = "change_password"
+                return redirect("account_change_password")
+            else:
+                messages.error(request, "Identity verification failed.")
+    else:
+        verify_form = IdentityVerifyForm()
+
+    return render(
+        request,
+        "events/verify_identity.html",
+        {
+            "form": verify_form,
+            "action_name": "Change Password",
+            "send_otp_url_email": "/accounts/mfa/otp/?channel=email",
+            "send_otp_url_sms": "/accounts/mfa/otp/?channel=sms",
+        },
+    )
+
+
+# --- Account Deletion ---
+
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        form = AccountDeleteForm(request.POST)
+        if form.is_valid():
+            user = request.user
+            from django.contrib.auth import logout
+
+            logout(request)
+            user.delete()
+            messages.success(
+                request, "Your account has been permanently deleted."
+            )
+            return redirect("home")
+    else:
+        form = AccountDeleteForm()
+    return render(request, "events/delete_account.html", {"form": form})
+
+
+# --- Account Recovery (does NOT leak user existence) ---
+
+
+def account_recovery(request):
+    """Accept email, username, or phone. Always show the same message."""
+    sent = False
+    if request.method == "POST":
+        form = AccountRecoveryForm(request.POST)
+        if form.is_valid():
+            identifier = form.cleaned_data["identifier"].strip()
+            # Look up user by email, username, or phone — silently
+            user = (
+                User.objects.filter(
+                    Q(email__iexact=identifier)
+                    | Q(username__iexact=identifier)
+                    | Q(profile__phone=identifier)
+                )
+                .first()
+            )
+            if user and user.email:
+                # Generate a password-reset-style token via allauth
+                from allauth.account.forms import ResetPasswordForm
+
+                rpf = ResetPasswordForm({"email": user.email})
+                if rpf.is_valid():
+                    rpf.save(request)
+            # Always show the same message regardless
+            sent = True
+    else:
+        form = AccountRecoveryForm()
+
+    return render(
+        request,
+        "events/account_recovery.html",
+        {"form": form, "sent": sent},
+    )
+
+
+# --- Admin User Elevation ---
+
+
+@login_required
+def admin_manage_users(request):
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied. Superuser required.")
+        return redirect("home")
+
+    query = request.GET.get("q", "")
+    users = User.objects.select_related("profile").order_by("-date_joined")
+    if query:
+        users = users.filter(
+            Q(username__icontains=query)
+            | Q(email__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+        )
+
+    return render(
+        request,
+        "events/admin_manage_users.html",
+        {"users": users[:50], "query": query},
+    )
+
+
+@login_required
+def admin_edit_user_role(request, user_id):
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied.")
+        return redirect("home")
+
+    target_user = get_object_or_404(User, pk=user_id)
+
+    if request.method == "POST":
+        form = AdminUserRoleForm(request.POST)
+        if form.is_valid():
+            target_user.is_staff = form.cleaned_data["is_staff"]
+            target_user.is_superuser = form.cleaned_data["is_superuser"]
+            target_user.save()
+            messages.success(
+                request,
+                f"Roles updated for {target_user.username}.",
+            )
+            return redirect("admin_manage_users")
+    else:
+        form = AdminUserRoleForm(initial={
+            "is_staff": target_user.is_staff,
+            "is_superuser": target_user.is_superuser,
+        })
+
+    return render(
+        request,
+        "events/admin_edit_user_role.html",
+        {"form": form, "target_user": target_user},
     )

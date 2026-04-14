@@ -1,0 +1,42 @@
+{% extends "events/base.html" %}
+
+{% block title %}Sign Up with Passkey{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <i class="bi bi-fingerprint fs-1 text-primary d-block mb-3"></i>
+                    <h3 class="mb-3">Sign Up with Passkey</h3>
+                    <p class="text-muted">Use your device's biometric or security key to create an account without a password.</p>
+                    <form method="post" id="passkey-signup-form">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3 text-start">
+                            <label class="form-label">{{ field.label }}</label>
+                            <input type="{{ field.field.widget.input_type|default:'text' }}"
+                                   name="{{ field.html_name }}"
+                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                   value="{{ field.value|default:'' }}"
+                                   placeholder="{{ field.label }}">
+                            {% if field.errors %}
+                            <div class="invalid-feedback">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-accent w-100">
+                            <i class="bi bi-fingerprint me-2"></i>Create Account with Passkey
+                        </button>
+                    </form>
+                    <hr>
+                    <p class="text-muted small mb-0">
+                        Prefer email/password? <a href="{% url 'account_signup' %}">Sign up traditionally</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

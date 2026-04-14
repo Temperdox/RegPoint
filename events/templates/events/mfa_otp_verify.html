@@ -1,0 +1,46 @@
+{% extends "events/base.html" %}
+
+{% block title %}Verify {{ channel|title }} Code{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="text-center mb-4">
+                        <i class="bi bi-{% if channel == 'email' %}envelope{% else %}phone{% endif %} me-2"></i>
+                        Verify {{ channel|title }}
+                    </h3>
+                    <p class="text-muted text-center">
+                        {% if channel == "email" %}
+                        Enter the 6-digit code sent to your email address.
+                        {% else %}
+                        Enter the 6-digit code sent to your phone.
+                        {% endif %}
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Verification Code</label>
+                            {{ form.code }}
+                            {% if form.code.errors %}
+                            <div class="text-danger small mt-1">{{ form.code.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Code expires in 10 minutes.</div>
+                        </div>
+                        <button type="submit" class="btn btn-accent w-100 mb-3">Verify Code</button>
+                    </form>
+
+                    <div class="text-center">
+                        <a href="{% url 'mfa_otp_setup' %}?channel={{ channel }}" class="text-muted small">
+                            Didn't receive it? Send a new code
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

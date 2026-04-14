@@ -1,4 +1,6 @@
+import secrets
 import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -11,8 +13,11 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     company = models.CharField(max_length=200, blank=True)
     bio = models.TextField(blank=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
     security_question = models.CharField(max_length=200, blank=True)
     security_answer = models.CharField(max_length=200, blank=True)
+    email_otp_verified = models.BooleanField(default=False)
+    sms_otp_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -144,3 +149,54 @@ class Registration(models.Model):
         if not self.confirmation_code:
             self.confirmation_code = uuid.uuid4().hex[:12].upper()
         super().save(*args, **kwargs)
+
+
+class EmailOTP(models.Model):
+    """One-time passcode sent via email or SMS for MFA verification."""
+
+    CHANNEL_CHOICES = [
+        ("email", "Email"),
+        ("sms", "SMS"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="otp_codes"
+    )
+    code = models.CharField(max_length=6)
+    channel = models.CharField(max_length=5, choices=CHANNEL_CHOICES, default="email")
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"OTP for {self.user.username} ({self.channel})"
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        return not self.is_used and not self.is_expired
+
+    @classmethod
+    def generate(cls, user, channel="email", lifetime_minutes=10):
+        code = f"{secrets.randbelow(10**6):06d}"
+        expires_at = timezone.now() + timezone.timedelta(minutes=lifetime_minutes)
+        # Invalidate any existing unused codes for this user/channel
+        cls.objects.filter(user=user, channel=channel, is_used=False).update(
+            is_used=True
+        )
+        return cls.objects.create(
+            user=user, code=code, channel=channel, expires_at=expires_at
+        )
+
+    def verify(self, submitted_code):
+        if self.is_valid and self.code == submitted_code:
+            self.is_used = True
+            self.save(update_fields=["is_used"])
+            return True
+        return False

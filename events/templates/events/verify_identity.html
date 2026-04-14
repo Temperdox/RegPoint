@@ -1,0 +1,55 @@
+{% extends "events/base.html" %}
+
+{% block title %}Verify Identity{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="text-center mb-2"><i class="bi bi-shield-lock me-2"></i>Verify Identity</h3>
+                    <p class="text-center text-muted mb-4">
+                        To <strong>{{ action_name }}</strong>, please verify your identity first.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Verification Method</label>
+                            {% for radio in form.method %}
+                            <div class="form-check mb-2">
+                                {{ radio.tag }}
+                                <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                            </div>
+                            {% endfor %}
+                            {% if form.method.errors %}
+                            <div class="text-danger small">{{ form.method.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                Need an OTP code?
+                                <a href="{{ send_otp_url_email }}">Send to email</a>
+                                or <a href="{{ send_otp_url_sms }}">Send via SMS</a>
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Password or Code</label>
+                            {{ form.credential }}
+                            {% if form.credential.errors %}
+                            <div class="text-danger small mt-1">{{ form.credential.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-accent w-100 mb-2">Verify &amp; Continue</button>
+                        <a href="{% url 'account_settings' %}" class="btn btn-outline-secondary w-100">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

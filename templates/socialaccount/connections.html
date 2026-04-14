@@ -1,0 +1,55 @@
+{% extends "events/base.html" %}
+{% load socialaccount %}
+
+{% block title %}Connected Accounts{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="mb-4"><i class="bi bi-link-45deg me-2"></i>Connected Accounts</h3>
+
+                    {% if socialaccount_list %}
+                    <div class="list-group mb-4">
+                        {% for sa in socialaccount_list %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-{% if sa.provider == 'google' %}google{% elif sa.provider == 'microsoft' %}microsoft{% elif sa.provider == 'github' %}github{% else %}link{% endif %} me-2"></i>
+                                <strong>{{ sa.get_provider_display }}</strong>
+                                <br><small class="text-muted">{{ sa.extra_data.email|default:sa.uid }}</small>
+                            </div>
+                            <form method="post" action="{% url 'socialaccount_connections' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="account" value="{{ sa.pk }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Disconnect</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No social accounts connected.</p>
+                    {% endif %}
+
+                    <h5 class="mb-3">Connect a New Account</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% provider_login_url 'google' process='connect' %}" class="btn btn-outline-danger">
+                            <i class="bi bi-google me-2"></i>Connect Google
+                        </a>
+                        <a href="{% provider_login_url 'microsoft' process='connect' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-microsoft me-2"></i>Connect Microsoft
+                        </a>
+                        <a href="{% provider_login_url 'github' process='connect' %}" class="btn btn-outline-dark">
+                            <i class="bi bi-github me-2"></i>Connect GitHub
+                        </a>
+                    </div>
+
+                    <hr>
+                    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Back to Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

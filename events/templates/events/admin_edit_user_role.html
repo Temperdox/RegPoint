@@ -1,0 +1,60 @@
+{% extends "events/base.html" %}
+
+{% block title %}Edit User Role{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="mb-4"><i class="bi bi-person-badge me-2"></i>Edit User Role</h3>
+
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                {% if target_user.profile.avatar %}
+                                <img src="{{ target_user.profile.avatar.url }}" alt="" class="rounded-circle me-3" style="width:48px;height:48px;object-fit:cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">
+                                    <span class="text-white fs-5">{{ target_user.username|first|upper }}</span>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ target_user.username }}</strong><br>
+                                    <small class="text-muted">{{ target_user.get_full_name }} &mdash; {{ target_user.email }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <div class="form-check form-switch mb-3">
+                                <input type="checkbox" name="is_staff" class="form-check-input" id="id_is_staff"
+                                       {% if form.initial.is_staff %}checked{% endif %}>
+                                <label class="form-check-label" for="id_is_staff">
+                                    <strong>Staff Access</strong><br>
+                                    <small class="text-muted">Can access the admin dashboard, create events, and view reports.</small>
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="is_superuser" class="form-check-input" id="id_is_superuser"
+                                       {% if form.initial.is_superuser %}checked{% endif %}>
+                                <label class="form-check-label" for="id_is_superuser">
+                                    <strong>Superuser Access</strong><br>
+                                    <small class="text-muted">Full admin privileges. Can manage all users and system settings.</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-accent w-100 mb-2">Save Roles</button>
+                        <a href="{% url 'admin_manage_users' %}" class="btn btn-outline-secondary w-100">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

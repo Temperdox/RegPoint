@@ -1,0 +1,24 @@
+{% extends "events/base.html" %}
+
+{% block title %}Deactivate Authenticator{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <i class="bi bi-exclamation-triangle fs-1 text-warning d-block mb-3"></i>
+                    <h4>Deactivate Authenticator App?</h4>
+                    <p class="text-muted">This will remove the authenticator app from your account. You can re-enable it later.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Yes, Deactivate</button>
+                        <a href="{% url 'profile' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

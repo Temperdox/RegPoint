@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
-from .models import Event, EventCategory, Registration, TicketType
+from .models import EmailOTP, Event, EventCategory, Registration, TicketType
 
 
 class HomePageTest(TestCase):
@@ -20,15 +21,15 @@ class EventListTest(TestCase):
 
 class AuthTest(TestCase):
     def test_signup_page_loads(self):
-        response = self.client.get("/signup/")
+        response = self.client.get(reverse("account_signup"))
         self.assertEqual(response.status_code, 200)
 
     def test_login_page_loads(self):
-        response = self.client.get("/login/")
+        response = self.client.get(reverse("account_login"))
         self.assertEqual(response.status_code, 200)
 
     def test_signup_creates_user(self):
-        response = self.client.post("/signup/", {
+        response = self.client.post(reverse("account_signup"), {
             "username": "testuser",
             "first_name": "Test",
             "last_name": "User",
@@ -100,3 +101,124 @@ class DashboardTest(TestCase):
         self.client.login(username="testuser", password="testpass123")
         response = self.client.get("/dashboard/")
         self.assertEqual(response.status_code, 200)
+
+
+class EmailOTPTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="otpuser", password="testpass123", email="otp@example.com"
+        )
+
+    def test_otp_generation(self):
+        otp = EmailOTP.generate(user=self.user, channel="email")
+        self.assertEqual(len(otp.code), 6)
+        self.assertTrue(otp.code.isdigit())
+        self.assertTrue(otp.is_valid)
+
+    def test_otp_verification(self):
+        otp = EmailOTP.generate(user=self.user, channel="email")
+        self.assertTrue(otp.verify(otp.code))
+        self.assertTrue(otp.is_used)
+        # Can't reuse
+        self.assertFalse(otp.verify(otp.code))
+
+    def test_otp_wrong_code(self):
+        otp = EmailOTP.generate(user=self.user, channel="email")
+        self.assertFalse(otp.verify("000000"))
+
+    def test_otp_invalidates_previous(self):
+        otp1 = EmailOTP.generate(user=self.user, channel="email")
+        otp2 = EmailOTP.generate(user=self.user, channel="email")
+        otp1.refresh_from_db()
+        self.assertTrue(otp1.is_used)  # Invalidated
+        self.assertTrue(otp2.is_valid)  # New one is valid
+
+
+class AccountSettingsTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="settingsuser", password="testpass123", email="s@example.com"
+        )
+        self.client.login(username="settingsuser", password="testpass123")
+
+    def test_settings_page_loads(self):
+        response = self.client.get("/settings/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_change_username(self):
+        response = self.client.post("/settings/username/", {"new_username": "newname"})
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "newname")
+
+    def test_change_username_duplicate(self):
+        User.objects.create_user(username="taken", password="pw")
+        response = self.client.post("/settings/username/", {"new_username": "taken"})
+        self.assertEqual(response.status_code, 200)  # Form re-rendered with error
+
+    def test_delete_account(self):
+        response = self.client.post("/settings/delete/", {"confirm_text": "DELETE"})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(User.objects.filter(username="settingsuser").exists())
+
+    def test_delete_account_wrong_confirmation(self):
+        response = self.client.post("/settings/delete/", {"confirm_text": "nope"})
+        self.assertEqual(response.status_code, 200)  # Re-renders with error
+        self.assertTrue(User.objects.filter(username="settingsuser").exists())
+
+
+class AccountRecoveryTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="recoverme", password="testpass123", email="recover@example.com"
+        )
+
+    def test_recovery_page_loads(self):
+        response = self.client.get("/recover/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_recovery_does_not_leak_existence(self):
+        # Existing user
+        response = self.client.post("/recover/", {"identifier": "recover@example.com"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recovery Email Sent")
+        # Non-existing user - same response
+        response = self.client.post("/recover/", {"identifier": "nobody@example.com"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recovery Email Sent")
+
+    def test_recovery_by_username(self):
+        response = self.client.post("/recover/", {"identifier": "recoverme"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recovery Email Sent")
+
+
+class AdminUserManagementTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="superadmin", password="adminpass", email="admin@example.com"
+        )
+        self.regular = User.objects.create_user(
+            username="regular", password="userpass", email="user@example.com"
+        )
+
+    def test_manage_users_requires_superuser(self):
+        self.client.login(username="regular", password="userpass")
+        response = self.client.get("/admin-dashboard/users/")
+        self.assertEqual(response.status_code, 302)
+
+    def test_manage_users_loads_for_superuser(self):
+        self.client.login(username="superadmin", password="adminpass")
+        response = self.client.get("/admin-dashboard/users/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_elevate_user(self):
+        self.client.login(username="superadmin", password="adminpass")
+        response = self.client.post(
+            f"/admin-dashboard/users/{self.regular.pk}/role/",
+            {"is_staff": "on", "is_superuser": ""},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.regular.refresh_from_db()
+        self.assertTrue(self.regular.is_staff)
+        self.assertFalse(self.regular.is_superuser)

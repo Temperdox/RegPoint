@@ -1,0 +1,87 @@
+{% extends "events/base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4"><i class="bi bi-people-fill me-2"></i>Manage Users</h2>
+
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-9">
+                    <input type="text" name="q" class="form-control" placeholder="Search by username, email, or name..." value="{{ query }}">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Joined</th>
+                            <th>Roles</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if u.profile.avatar %}
+                                    <img src="{{ u.profile.avatar.url }}" alt="" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">
+                                        <span class="text-white small">{{ u.username|first|upper }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ u.username }}</strong><br>
+                                        <small class="text-muted">{{ u.get_full_name }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                {% if u.is_superuser %}
+                                <span class="badge bg-danger">Superuser</span>
+                                {% endif %}
+                                {% if u.is_staff %}
+                                <span class="badge bg-primary">Staff</span>
+                                {% endif %}
+                                {% if not u.is_staff and not u.is_superuser %}
+                                <span class="badge bg-secondary">User</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.pk != user.pk %}
+                                <a href="{% url 'admin_edit_user_role' u.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Roles
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">(you)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-muted text-center">No users found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
