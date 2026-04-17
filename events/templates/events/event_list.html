@@ -16,12 +16,12 @@
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="q" class="form-control" placeholder="Search events..." value="{{ query }}">
+                    <label class="form-label" for="filter_q">Search</label>
+                    <input type="text" id="filter_q" name="q" class="form-control" placeholder="Search events..." value="{{ query }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Category</label>
-                    <select name="category" class="form-select">
+                    <label class="form-label" for="filter_category">Category</label>
+                    <select id="filter_category" name="category" class="form-select">
                         <option value="">All Categories</option>
                         {% for cat in categories %}
                         <option value="{{ cat.slug }}" {% if current_category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
@@ -29,8 +29,8 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Show</label>
-                    <select name="show" class="form-select">
+                    <label class="form-label" for="filter_show">Show</label>
+                    <select id="filter_show" name="show" class="form-select">
                         <option value="upcoming" {% if current_show == "upcoming" %}selected{% endif %}>Upcoming</option>
                         <option value="past" {% if current_show == "past" %}selected{% endif %}>Past</option>
                         <option value="all" {% if current_show == "all" %}selected{% endif %}>All</option>

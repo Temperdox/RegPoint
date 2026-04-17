@@ -1,9 +1,14 @@
+import secrets
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import EmailOTP, Event, EventCategory, Registration, TicketType
+
+# Generated once per test run so no literal password is ever committed.
+TEST_PASSWORD = secrets.token_urlsafe(16)
 
 
 class HomePageTest(TestCase):
@@ -34,8 +39,8 @@ class AuthTest(TestCase):
             "first_name": "Test",
             "last_name": "User",
             "email": "test@example.com",
-            "password1": "SecurePass123!",
-            "password2": "SecurePass123!",
+            "password1": TEST_PASSWORD,
+            "password2": TEST_PASSWORD,
             "security_question": "What is your pet's name?",
             "security_answer": "Buddy",
         })
@@ -46,7 +51,7 @@ class AuthTest(TestCase):
 class EventRegistrationTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", password="testpass123"
+            username="testuser", password=TEST_PASSWORD
         )
         self.category = EventCategory.objects.create(
             name="Test", slug="test"
@@ -79,7 +84,7 @@ class EventRegistrationTest(TestCase):
         self.assertEqual(response.status_code, 302)
 
     def test_registration_flow(self):
-        self.client.login(username="testuser", password="testpass123")
+        self.client.login(username="testuser", password=TEST_PASSWORD)
         response = self.client.post(
             f"/events/{self.event.slug}/register/",
             {"ticket_type": self.ticket.id, "quantity": 2},
@@ -97,8 +102,8 @@ class DashboardTest(TestCase):
         self.assertEqual(response.status_code, 302)
 
     def test_dashboard_loads_for_logged_in_user(self):
-        User.objects.create_user(username="testuser", password="testpass123")
-        self.client.login(username="testuser", password="testpass123")
+        User.objects.create_user(username="testuser", password=TEST_PASSWORD)
+        self.client.login(username="testuser", password=TEST_PASSWORD)
         response = self.client.get("/dashboard/")
         self.assertEqual(response.status_code, 200)
 
@@ -106,7 +111,7 @@ class DashboardTest(TestCase):
 class EmailOTPTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="otpuser", password="testpass123", email="otp@example.com"
+            username="otpuser", password=TEST_PASSWORD, email="otp@example.com"
         )
 
     def test_otp_generation(self):
@@ -137,9 +142,9 @@ class EmailOTPTest(TestCase):
 class AccountSettingsTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="settingsuser", password="testpass123", email="s@example.com"
+            username="settingsuser", password=TEST_PASSWORD, email="s@example.com"
         )
-        self.client.login(username="settingsuser", password="testpass123")
+        self.client.login(username="settingsuser", password=TEST_PASSWORD)
 
     def test_settings_page_loads(self):
         response = self.client.get("/settings/")
@@ -152,7 +157,7 @@ class AccountSettingsTest(TestCase):
         self.assertEqual(self.user.username, "newname")
 
     def test_change_username_duplicate(self):
-        User.objects.create_user(username="taken", password="pw")
+        User.objects.create_user(username="taken", password=TEST_PASSWORD)
         response = self.client.post("/settings/username/", {"new_username": "taken"})
         self.assertEqual(response.status_code, 200)  # Form re-rendered with error
 
@@ -170,7 +175,7 @@ class AccountSettingsTest(TestCase):
 class AccountRecoveryTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="recoverme", password="testpass123", email="recover@example.com"
+            username="recoverme", password=TEST_PASSWORD, email="recover@example.com"
         )
 
     def test_recovery_page_loads(self):
@@ -196,24 +201,24 @@ class AccountRecoveryTest(TestCase):
 class AdminUserManagementTest(TestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser(
-            username="superadmin", password="adminpass", email="admin@example.com"
+            username="superadmin", password=TEST_PASSWORD, email="admin@example.com"
         )
         self.regular = User.objects.create_user(
-            username="regular", password="userpass", email="user@example.com"
+            username="regular", password=TEST_PASSWORD, email="user@example.com"
         )
 
     def test_manage_users_requires_superuser(self):
-        self.client.login(username="regular", password="userpass")
+        self.client.login(username="regular", password=TEST_PASSWORD)
         response = self.client.get("/admin-dashboard/users/")
         self.assertEqual(response.status_code, 302)
 
     def test_manage_users_loads_for_superuser(self):
-        self.client.login(username="superadmin", password="adminpass")
+        self.client.login(username="superadmin", password=TEST_PASSWORD)
         response = self.client.get("/admin-dashboard/users/")
         self.assertEqual(response.status_code, 200)
 
     def test_elevate_user(self):
-        self.client.login(username="superadmin", password="adminpass")
+        self.client.login(username="superadmin", password=TEST_PASSWORD)
         response = self.client.post(
             f"/admin-dashboard/users/{self.regular.pk}/role/",
             {"is_staff": "on", "is_superuser": ""},

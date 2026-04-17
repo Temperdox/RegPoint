@@ -27,37 +27,37 @@
                             <form method="post" enctype="multipart/form-data">
                                 {% csrf_token %}
                                 <div class="mb-3">
-                                    <label class="form-label">Profile Picture</label>
+                                    <label class="form-label" for="{{ form.avatar.id_for_label }}">Profile Picture</label>
                                     {{ form.avatar }}
                                     {% if form.avatar.errors %}<div class="text-danger small">{{ form.avatar.errors.0 }}</div>{% endif %}
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">First Name</label>
+                                        <label class="form-label" for="{{ form.first_name.id_for_label }}">First Name</label>
                                         {{ form.first_name }}
                                         {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors.0 }}</div>{% endif %}
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Last Name</label>
+                                        <label class="form-label" for="{{ form.last_name.id_for_label }}">Last Name</label>
                                         {{ form.last_name }}
                                         {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors.0 }}</div>{% endif %}
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Email</label>
+                                    <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
                                     {{ form.email }}
                                     {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Phone</label>
+                                    <label class="form-label" for="{{ form.phone.id_for_label }}">Phone</label>
                                     {{ form.phone }}
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Company</label>
+                                    <label class="form-label" for="{{ form.company.id_for_label }}">Company</label>
                                     {{ form.company }}
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Bio</label>
+                                    <label class="form-label" for="{{ form.bio.id_for_label }}">Bio</label>
                                     {{ form.bio }}
                                 </div>
                                 <button type="submit" class="btn btn-accent w-100">Save Changes</button>

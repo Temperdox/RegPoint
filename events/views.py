@@ -28,6 +28,9 @@ from .forms import (
 )
 from .models import EmailOTP, Event, EventCategory, Registration, TicketType
 
+ACCESS_DENIED = "Access denied."
+MAX_TICKET_TYPES = 20
+
 
 # --- Public Views ---
 
@@ -145,39 +148,46 @@ def mfa_otp_setup(request):
     return redirect(f"{request.build_absolute_uri('/accounts/mfa/otp/verify/')}?channel={channel}")
 
 
+def _consume_otp(user, channel, submitted_code):
+    """Look up the active OTP for this user/channel and verify the submitted code.
+    On success, mark the corresponding profile flag and return True."""
+    otp = (
+        EmailOTP.objects.filter(user=user, channel=channel, is_used=False)
+        .order_by("-created_at")
+        .first()
+    )
+    if not (otp and otp.verify(submitted_code)):
+        return False
+
+    profile = user.profile
+    if channel == "email":
+        profile.email_otp_verified = True
+    else:
+        profile.sms_otp_verified = True
+    profile.save()
+    return True
+
+
 @login_required
 def mfa_otp_verify(request):
     """Verify the submitted OTP code."""
     channel = request.GET.get("channel", "email")
 
-    if request.method == "POST":
-        form = EmailOTPForm(request.POST)
-        if form.is_valid():
-            submitted_code = form.cleaned_data["code"]
-            otp = (
-                EmailOTP.objects.filter(
-                    user=request.user, channel=channel, is_used=False
-                )
-                .order_by("-created_at")
-                .first()
-            )
-            if otp and otp.verify(submitted_code):
-                # Mark the user's profile as having verified this channel
-                profile = request.user.profile
-                if channel == "email":
-                    profile.email_otp_verified = True
-                else:
-                    profile.sms_otp_verified = True
-                profile.save()
-                messages.success(
-                    request,
-                    f"{'Email' if channel == 'email' else 'SMS'} verification successful!",
-                )
-                return redirect("profile")
-            else:
-                messages.error(request, "Invalid or expired code. Please try again.")
-    else:
-        form = EmailOTPForm()
+    if request.method != "POST":
+        return render(
+            request,
+            "events/mfa_otp_verify.html",
+            {"form": EmailOTPForm(), "channel": channel},
+        )
+
+    form = EmailOTPForm(request.POST)
+    if form.is_valid() and _consume_otp(request.user, channel, form.cleaned_data["code"]):
+        label = "Email" if channel == "email" else "SMS"
+        messages.success(request, f"{label} verification successful!")
+        return redirect("profile")
+
+    if form.is_valid():
+        messages.error(request, "Invalid or expired code. Please try again.")
 
     return render(
         request,
@@ -321,7 +331,7 @@ def cancel_registration(request, code):
 class AdminDashboardView(LoginRequiredMixin, View):
     def get(self, request):
         if not request.user.is_staff:
-            messages.error(request, "Access denied.")
+            messages.error(request, ACCESS_DENIED)
             return redirect("home")
 
         total_events = Event.objects.count()
@@ -373,14 +383,18 @@ class AdminDashboardView(LoginRequiredMixin, View):
 @login_required
 def create_event(request):
     if not request.user.is_staff:
-        messages.error(request, "Access denied.")
+        messages.error(request, ACCESS_DENIED)
         return redirect("home")
 
     if request.method == "POST":
         form = EventForm(request.POST)
         ticket_forms = []
-        # Collect ticket type data from POST
-        ticket_count = int(request.POST.get("ticket_count", 1))
+        # Clamp user-controlled loop bound (DoS / resource-exhaustion guard).
+        try:
+            ticket_count = int(request.POST.get("ticket_count", 1))
+        except (TypeError, ValueError):
+            ticket_count = 1
+        ticket_count = max(1, min(ticket_count, MAX_TICKET_TYPES))
         for i in range(ticket_count):
             prefix = f"ticket_{i}"
             ticket_forms.append(
@@ -635,7 +649,7 @@ def admin_manage_users(request):
 @login_required
 def admin_edit_user_role(request, user_id):
     if not request.user.is_superuser:
-        messages.error(request, "Access denied.")
+        messages.error(request, ACCESS_DENIED)
         return redirect("home")
 
     target_user = get_object_or_404(User, pk=user_id)

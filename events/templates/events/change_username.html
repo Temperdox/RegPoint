@@ -13,7 +13,7 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label">New Username</label>
+                            <label class="form-label" for="{{ form.new_username.id_for_label }}">New Username</label>
                             {{ form.new_username }}
                             {% if form.new_username.errors %}
                             <div class="text-danger small mt-1">{{ form.new_username.errors.0 }}</div>

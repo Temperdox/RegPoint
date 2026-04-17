@@ -22,8 +22,8 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label">Verification Code</label>
-                            <input type="text" name="code" class="form-control form-control-lg text-center"
+                            <label class="form-label" for="id_code">Verification Code</label>
+                            <input type="text" id="id_code" name="code" class="form-control form-control-lg text-center"
                                    placeholder="000000" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*"
                                    required autofocus>
                             {% if form.code.errors %}

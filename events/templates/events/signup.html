@@ -13,58 +13,58 @@
                         {% csrf_token %}
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">First Name</label>
+                                <label class="form-label" for="{{ form.first_name.id_for_label }}">First Name</label>
                                 {{ form.first_name }}
                                 {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors.0 }}</div>{% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Last Name</label>
+                                <label class="form-label" for="{{ form.last_name.id_for_label }}">Last Name</label>
                                 {{ form.last_name }}
                                 {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors.0 }}</div>{% endif %}
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Username</label>
+                            <label class="form-label" for="{{ form.username.id_for_label }}">Username</label>
                             {{ form.username }}
                             {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors.0 }}</div>{% endif %}
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Email</label>
+                            <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
                             {{ form.email }}
                             {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Password</label>
+                                <label class="form-label" for="{{ form.password1.id_for_label }}">Password</label>
                                 {{ form.password1 }}
                                 {% if form.password1.errors %}<div class="text-danger small">{{ form.password1.errors.0 }}</div>{% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Confirm Password</label>
+                                <label class="form-label" for="{{ form.password2.id_for_label }}">Confirm Password</label>
                                 {{ form.password2 }}
                                 {% if form.password2.errors %}<div class="text-danger small">{{ form.password2.errors.0 }}</div>{% endif %}
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone <small class="text-muted">(optional)</small></label>
+                                <label class="form-label" for="{{ form.phone.id_for_label }}">Phone <small class="text-muted">(optional)</small></label>
                                 {{ form.phone }}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Company <small class="text-muted">(optional)</small></label>
+                                <label class="form-label" for="{{ form.company.id_for_label }}">Company <small class="text-muted">(optional)</small></label>
                                 {{ form.company }}
                             </div>
                         </div>
                         <hr>
                         <h6 class="mb-3"><i class="bi bi-shield-lock me-1"></i>Security Question</h6>
                         <div class="mb-3">
-                            <label class="form-label">Security Question</label>
+                            <label class="form-label" for="{{ form.security_question.id_for_label }}">Security Question</label>
                             {{ form.security_question }}
                             <div class="form-text">{{ form.security_question.help_text }}</div>
                             {% if form.security_question.errors %}<div class="text-danger small">{{ form.security_question.errors.0 }}</div>{% endif %}
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Security Answer</label>
+                            <label class="form-label" for="{{ form.security_answer.id_for_label }}">Security Answer</label>
                             {{ form.security_answer }}
                             {% if form.security_answer.errors %}<div class="text-danger small">{{ form.security_answer.errors.0 }}</div>{% endif %}
                         </div>

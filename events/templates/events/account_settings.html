@@ -15,7 +15,7 @@
                         <div class="card-header"><h5 class="mb-0">Account Information</h5></div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label text-muted small">Username</label>
+                                <div class="form-label text-muted small">Username</div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <strong>{{ user.username }}</strong>
                                     <a href="{% url 'change_username' %}" class="btn btn-sm btn-outline-primary">Change</a>
@@ -23,7 +23,7 @@
                             </div>
                             <hr>
                             <div class="mb-3">
-                                <label class="form-label text-muted small">Email</label>
+                                <div class="form-label text-muted small">Email</div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <strong>{{ user.email }}</strong>
                                     <a href="{% url 'change_email_request' %}" class="btn btn-sm btn-outline-primary">Change</a>
@@ -32,7 +32,7 @@
                             </div>
                             <hr>
                             <div class="mb-3">
-                                <label class="form-label text-muted small">Password</label>
+                                <div class="form-label text-muted small">Password</div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <strong>********</strong>
                                     <a href="{% url 'change_password_request' %}" class="btn btn-sm btn-outline-primary">Change</a>

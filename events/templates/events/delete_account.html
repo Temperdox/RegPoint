@@ -28,7 +28,7 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3 text-start">
-                            <label class="form-label">Type <strong>DELETE</strong> to confirm</label>
+                            <label class="form-label" for="{{ form.confirm_text.id_for_label }}">Type <strong>DELETE</strong> to confirm</label>
                             {{ form.confirm_text }}
                             {% if form.confirm_text.errors %}
                             <div class="text-danger small mt-1">{{ form.confirm_text.errors.0 }}</div>

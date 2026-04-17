@@ -16,13 +16,15 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Verification Method</label>
+                            <div class="form-label fw-bold" id="verification_method_label">Verification Method</div>
+                            <div role="radiogroup" aria-labelledby="verification_method_label">
                             {% for radio in form.method %}
                             <div class="form-check mb-2">
                                 {{ radio.tag }}
                                 <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
                             </div>
                             {% endfor %}
+                            </div>
                             {% if form.method.errors %}
                             <div class="text-danger small">{{ form.method.errors.0 }}</div>
                             {% endif %}
@@ -37,7 +39,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Password or Code</label>
+                            <label class="form-label" for="{{ form.credential.id_for_label }}">Password or Code</label>
                             {{ form.credential }}
                             {% if form.credential.errors %}
                             <div class="text-danger small mt-1">{{ form.credential.errors.0 }}</div>

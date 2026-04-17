@@ -16,7 +16,7 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label">New Email Address</label>
+                            <label class="form-label" for="{{ form.new_email.id_for_label }}">New Email Address</label>
                             {{ form.new_email }}
                             {% if form.new_email.errors %}
                             <div class="text-danger small mt-1">{{ form.new_email.errors.0 }}</div>
