@@ -22,17 +22,23 @@
                         {% for field in form %}
                         <div class="mb-3">
                             <label class="form-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
-                            <input type="{{ field.field.widget.input_type|default:'text' }}"
+                            {% if field.field.widget.input_type == 'password' %}
+                            <input type="password"
+                                   id="id_{{ field.html_name }}"
+                                   name="{{ field.html_name }}"
+                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                   placeholder="{{ field.label }}"
+                                   autocomplete="current-password">
+                            {% else %}
+                            <input type="text"
                                    id="id_{{ field.html_name }}"
                                    name="{{ field.html_name }}"
                                    class="form-control {% if field.errors %}is-invalid{% endif %}"
                                    value="{{ field.value|default:'' }}"
                                    placeholder="{{ field.label }}"
-                                   {% if field.field.widget.input_type == 'password' %}autocomplete="current-password"
-                                   {% elif field.html_name == 'login' or field.html_name == 'username' %}autocomplete="username"
-                                   {% elif field.html_name == 'email' %}autocomplete="email"
-                                   {% endif %}
+                                   autocomplete="username"
                                    {% if forloop.first %}autofocus{% endif %}>
+                            {% endif %}
                             {% if field.errors %}
                             <div class="invalid-feedback">{{ field.errors.0 }}</div>
                             {% endif %}

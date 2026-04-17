@@ -380,49 +380,64 @@ class AdminDashboardView(LoginRequiredMixin, View):
         return render(request, "events/admin_dashboard.html", context)
 
 
+def _parse_ticket_count(post_data):
+    """Parse and clamp the user-supplied ticket_count (DoS guard)."""
+    try:
+        count = int(post_data.get("ticket_count", 1))
+    except (TypeError, ValueError):
+        count = 1
+    return max(1, min(count, MAX_TICKET_TYPES))
+
+
+def _build_ticket_forms(post_data, ticket_count):
+    return [
+        TicketTypeForm(post_data, prefix=f"ticket_{i}")
+        for i in range(ticket_count)
+    ]
+
+
+def _generate_unique_event_slug(title):
+    base = slugify(title)
+    slug = base
+    counter = 1
+    while Event.objects.filter(slug=slug).exists():
+        slug = f"{base}-{counter}"
+        counter += 1
+    return slug
+
+
+def _save_event_with_tickets(form, ticket_forms, user):
+    event = form.save(commit=False)
+    event.created_by = user
+    event.slug = _generate_unique_event_slug(event.title)
+    event.save()
+    for tf in ticket_forms:
+        ticket = tf.save(commit=False)
+        ticket.event = event
+        ticket.save()
+    return event
+
+
 @login_required
 def create_event(request):
     if not request.user.is_staff:
         messages.error(request, ACCESS_DENIED)
         return redirect("home")
 
-    if request.method == "POST":
-        form = EventForm(request.POST)
-        ticket_forms = []
-        # Clamp user-controlled loop bound (DoS / resource-exhaustion guard).
-        try:
-            ticket_count = int(request.POST.get("ticket_count", 1))
-        except (TypeError, ValueError):
-            ticket_count = 1
-        ticket_count = max(1, min(ticket_count, MAX_TICKET_TYPES))
-        for i in range(ticket_count):
-            prefix = f"ticket_{i}"
-            ticket_forms.append(
-                TicketTypeForm(request.POST, prefix=prefix)
-            )
+    if request.method != "POST":
+        return render(
+            request,
+            "events/create_event.html",
+            {"form": EventForm(), "ticket_forms": [TicketTypeForm(prefix="ticket_0")]},
+        )
 
-        if form.is_valid() and all(tf.is_valid() for tf in ticket_forms):
-            event = form.save(commit=False)
-            event.created_by = request.user
-            event.slug = slugify(event.title)
-            # Ensure unique slug
-            base_slug = event.slug
-            counter = 1
-            while Event.objects.filter(slug=event.slug).exists():
-                event.slug = f"{base_slug}-{counter}"
-                counter += 1
-            event.save()
+    form = EventForm(request.POST)
+    ticket_forms = _build_ticket_forms(request.POST, _parse_ticket_count(request.POST))
 
-            for tf in ticket_forms:
-                ticket = tf.save(commit=False)
-                ticket.event = event
-                ticket.save()
-
-            messages.success(request, f'Event "{event.title}" created successfully.')
-            return redirect("event_detail", slug=event.slug)
-    else:
-        form = EventForm()
-        ticket_forms = [TicketTypeForm(prefix="ticket_0")]
+    if form.is_valid() and all(tf.is_valid() for tf in ticket_forms):
+        event = _save_event_with_tickets(form, ticket_forms, request.user)
+        messages.success(request, f'Event "{event.title}" created successfully.')
+        return redirect("event_detail", slug=event.slug)
 
     return render(
         request,

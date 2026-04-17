@@ -16,15 +16,31 @@
                         {% for field in form %}
                         <div class="mb-3 text-start">
                             <label class="form-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                            {% if field.html_name == 'email' %}
+                            <input type="email"
+                                   id="id_{{ field.html_name }}"
+                                   name="{{ field.html_name }}"
+                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                   value="{{ field.value|default:'' }}"
+                                   placeholder="{{ field.label }}"
+                                   autocomplete="email">
+                            {% elif field.html_name == 'username' %}
+                            <input type="text"
+                                   id="id_{{ field.html_name }}"
+                                   name="{{ field.html_name }}"
+                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                   value="{{ field.value|default:'' }}"
+                                   placeholder="{{ field.label }}"
+                                   autocomplete="username">
+                            {% else %}
                             <input type="{{ field.field.widget.input_type|default:'text' }}"
                                    id="id_{{ field.html_name }}"
                                    name="{{ field.html_name }}"
                                    class="form-control {% if field.errors %}is-invalid{% endif %}"
                                    value="{{ field.value|default:'' }}"
                                    placeholder="{{ field.label }}"
-                                   {% if field.html_name == 'email' %}autocomplete="email"
-                                   {% elif field.html_name == 'username' %}autocomplete="username"
-                                   {% endif %}>
+                                   autocomplete="off">
+                            {% endif %}
                             {% if field.errors %}
                             <div class="invalid-feedback">{{ field.errors.0 }}</div>
                             {% endif %}
