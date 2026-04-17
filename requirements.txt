@@ -1,5 +1,6 @@
 django>=5.1,<7.0
 django-allauth[mfa,socialaccount]>=65.14.2
+dj-database-url>=2.2
 gunicorn>=22.0
 whitenoise>=6.7
 mysqlclient>=2.2
