@@ -86,15 +86,11 @@ DATABASES = {
     )
 }
 
-# Azure Database for MySQL Flexible Server enforces TLS. If MYSQL_SSL_CA points
-# at the DigiCert bundle on the App Service host, merge it into OPTIONS.
-if (
-    os.environ.get("MYSQL_SSL_CA")
-    and DATABASES["default"].get("ENGINE") == "django.db.backends.mysql"
-):
-    DATABASES["default"].setdefault("OPTIONS", {})["ssl"] = {
-        "ca": os.environ["MYSQL_SSL_CA"],
-    }
+# Azure Database for PostgreSQL Flexible Server enforces TLS by default.
+# psycopg reads sslmode from the URL query string (?sslmode=require),
+# so no extra handling is needed here for the common case. For stricter
+# verification (verify-full) set sslmode + sslrootcert in DATABASE_URL:
+#   postgres://user:pw@host:5432/db?sslmode=verify-full&sslrootcert=/path/to/ca.pem
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
