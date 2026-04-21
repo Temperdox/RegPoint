@@ -22,6 +22,7 @@ from .forms import (
     EmailOTPForm,
     EventForm,
     IdentityVerifyForm,
+    OnboardingProfileForm,
     RegistrationForm,
     TicketTypeForm,
     UserProfileForm,
@@ -30,6 +31,77 @@ from .models import EmailOTP, Event, EventCategory, Registration, TicketType
 
 ACCESS_DENIED = "Access denied."
 MAX_TICKET_TYPES = 20
+
+
+# --- Post-signup onboarding wizard ---
+
+
+@login_required
+def onboarding_profile(request):
+    """Step 2 of 5 — required first + last name."""
+    if request.method == "POST":
+        form = OnboardingProfileForm(request.POST)
+        if form.is_valid():
+            user = request.user
+            user.first_name = form.cleaned_data["first_name"]
+            user.last_name = form.cleaned_data["last_name"]
+            user.save(update_fields=["first_name", "last_name"])
+            return redirect("onboarding_phone")
+    else:
+        form = OnboardingProfileForm(
+            initial={
+                "first_name": request.user.first_name,
+                "last_name": request.user.last_name,
+            }
+        )
+    return render(
+        request,
+        "events/onboarding_profile.html",
+        {"step": 2, "total_steps": 5, "form": form},
+    )
+
+
+@login_required
+def onboarding_phone(request):
+    """Step 3 of 5 — optional phone number."""
+    if request.method == "POST":
+        action = request.POST.get("action", "save")
+        if action == "save":
+            phone = request.POST.get("phone", "").strip()
+            if phone:
+                profile = request.user.profile
+                profile.phone = phone
+                profile.save(update_fields=["phone"])
+        return redirect("onboarding_passkey")
+    return render(
+        request,
+        "events/onboarding_phone.html",
+        {"step": 3, "total_steps": 5, "current_phone": request.user.profile.phone},
+    )
+
+
+@login_required
+def onboarding_passkey(request):
+    """Step 4 of 5 — optional passkey."""
+    if request.method == "POST":
+        return redirect("onboarding_mfa")
+    return render(
+        request,
+        "events/onboarding_passkey.html",
+        {"step": 4, "total_steps": 5},
+    )
+
+
+@login_required
+def onboarding_mfa(request):
+    """Step 5 of 5 — optional authenticator-app MFA."""
+    if request.method == "POST":
+        return redirect("dashboard")
+    return render(
+        request,
+        "events/onboarding_mfa.html",
+        {"step": 5, "total_steps": 5},
+    )
 
 
 # --- Public Views ---
@@ -473,7 +545,22 @@ def _verify_identity(request, method, credential):
 @login_required
 def account_settings(request):
     """Main account settings page."""
-    return render(request, "events/account_settings.html")
+    try:
+        from allauth.mfa.models import Authenticator
+    except ImportError:
+        authenticators = []
+    else:
+        authenticators = Authenticator.objects.filter(user=request.user)
+    enrolled_types = {a.type for a in authenticators}
+    return render(
+        request,
+        "events/account_settings.html",
+        {
+            "totp_enrolled": "totp" in enrolled_types,
+            "passkey_enrolled": "webauthn" in enrolled_types,
+            "recovery_codes_enrolled": "recovery_codes" in enrolled_types,
+        },
+    )
 
 
 @login_required

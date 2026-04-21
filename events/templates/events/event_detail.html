@@ -2,18 +2,220 @@
 
 {% block title %}{{ event.title }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin="">
+<style>
+    .ticket-availability {
+        padding-bottom: 1.1rem;
+        margin-bottom: 1.1rem;
+        border-bottom: 1px solid var(--nb-border);
+        line-height: 1.15;
+    }
+    .ticket-avail-num {
+        display: block;
+        font-size: 2.5rem; font-weight: 800;
+        color: var(--nb-accent);
+        letter-spacing: -.02em;
+        font-variant-numeric: tabular-nums;
+    }
+    .ticket-avail-num.is-sold-out { color: #fca5a5; }
+    .ticket-avail-lbl {
+        display: block; margin-top: .15rem;
+        font-size: 1rem; font-weight: 500;
+        color: var(--nb-text);
+    }
+    .ticket-meta {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: .6rem; margin-bottom: 1.25rem;
+    }
+    .ticket-meta-item {
+        background: var(--nb-surface-2);
+        border: 1px solid var(--nb-border);
+        border-radius: .55rem;
+        padding: .55rem .75rem;
+        display: flex; flex-direction: column; gap: .1rem;
+    }
+    .ticket-meta-lbl {
+        font-size: .7rem; font-weight: 600; letter-spacing: .07em;
+        text-transform: uppercase; color: var(--nb-text-muted);
+    }
+    .ticket-meta-val {
+        font-size: 1rem; font-weight: 700;
+        color: var(--nb-text);
+        font-variant-numeric: tabular-nums;
+    }
+    .ticket-types-heading {
+        font-size: .78rem; font-weight: 600; letter-spacing: .08em;
+        text-transform: uppercase; color: var(--nb-text-muted);
+        margin: .25rem 0 .75rem;
+    }
+    .ticket-type-list {
+        display: flex; flex-direction: column; gap: .5rem;
+        list-style: none; padding: 0; margin: 0 0 1rem 0;
+    }
+    .ticket-type-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: .7rem .9rem;
+        background: var(--nb-surface-2);
+        border: 1px solid var(--nb-border);
+        border-radius: .6rem;
+        transition: border-color .15s, background .15s;
+    }
+    .ticket-type-row:hover { border-color: var(--nb-border-strong); background: var(--nb-bg-elevated); }
+    .ticket-type-name {
+        display: inline-flex; align-items: center; gap: .55rem;
+        font-weight: 600; color: var(--nb-text);
+    }
+    .ticket-type-name .bi { color: var(--nb-accent); font-size: 1rem; }
+    .ticket-type-price {
+        font-weight: 700; color: #8bb8ff;
+        font-variant-numeric: tabular-nums; font-size: .875rem;
+        padding: .25rem .7rem;
+        background: rgba(76,157,255,.14);
+        border: 1px solid rgba(76,157,255,.3);
+        border-radius: 999px;
+    }
+
+    /* --- Share + favorite action buttons --- */
+    .event-actions { display: flex; gap: .5rem; }
+    .event-action-btn {
+        width: 40px; height: 40px;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--nb-surface-2);
+        border: 1px solid var(--nb-border);
+        border-radius: 50%;
+        color: var(--nb-text);
+        cursor: pointer;
+        transition: border-color .15s, background .15s, color .15s, transform .15s;
+        padding: 0;
+    }
+    .event-action-btn:hover,
+    .event-action-btn:focus-visible {
+        border-color: var(--nb-border-strong);
+        background: var(--nb-bg-elevated);
+        color: #fff;
+    }
+    .event-action-btn .bi { font-size: 1.05rem; }
+    .event-action-btn.is-favorited {
+        color: #f87171;
+        border-color: rgba(248,113,113,.45);
+        background: rgba(248,113,113,.12);
+    }
+    .event-action-btn.is-favorited:hover,
+    .event-action-btn.is-favorited:focus-visible {
+        color: #fca5a5;
+        background: rgba(248,113,113,.18);
+    }
+    .event-action-btn.is-copied {
+        color: #4ade80;
+        border-color: rgba(74,222,128,.45);
+        background: rgba(74,222,128,.12);
+    }
+
+    /* --- Organizer strip (inline at bottom of event info card, no border) --- */
+    .organizer-strip {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        width: 100%;
+        margin-top: 1.75rem;
+        padding-top: 1.25rem;
+    }
+    .organizer-avatar {
+        flex-shrink: 0;
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        background: var(--nb-surface-2);
+        display: inline-flex; align-items: center; justify-content: center;
+        color: var(--nb-accent);
+        font-size: 1.65rem;
+        overflow: hidden;
+    }
+    .organizer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .organizer-info { flex: 1; min-width: 0; }
+    .organizer-label {
+        font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+        text-transform: uppercase; color: var(--nb-text-muted);
+        margin-bottom: .15rem;
+    }
+    .organizer-name {
+        font-weight: 700; font-size: 1.15rem;
+        color: var(--nb-text); line-height: 1.2;
+    }
+    .organizer-name .organizer-by {
+        font-weight: 500; color: var(--nb-text-muted); margin-right: .25rem;
+    }
+    .organizer-meta {
+        color: var(--nb-text-muted); font-size: .85rem;
+        margin-top: .2rem;
+        display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
+    }
+    .organizer-follow-btn {
+        flex-shrink: 0;
+        font-weight: 600;
+        padding: .4rem 1.1rem;
+        border-radius: 999px;
+    }
+    .organizer-follow-btn.is-following {
+        background: var(--nb-surface-2);
+        border-color: var(--nb-border-strong);
+        color: var(--nb-text);
+    }
+    .organizer-follow-btn.is-following:hover,
+    .organizer-follow-btn.is-following:focus-visible {
+        background: rgba(239,68,68,.12);
+        border-color: rgba(239,68,68,.4);
+        color: #fca5a5;
+    }
+
+    /* --- Location + Leaflet map --- */
+    .event-map {
+        height: 280px;
+        border-radius: .55rem;
+        border: 1px solid var(--nb-border);
+        overflow: hidden;
+    }
+    .event-map .leaflet-container { background: var(--nb-dark); }
+    .event-map .leaflet-control-attribution {
+        background: rgba(10,15,30,.75);
+        color: var(--nb-text-muted);
+    }
+    .event-map .leaflet-control-attribution a { color: var(--nb-accent); }
+    .map-link { font-size: .9rem; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .event-action-btn { transition: none; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'event_list' %}">Events</a></li>
-            <li class="breadcrumb-item active">{{ event.title }}</li>
-        </ol>
-    </nav>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'event_list' %}">Events</a></li>
+                <li class="breadcrumb-item active">{{ event.title }}</li>
+            </ol>
+        </nav>
+        <div class="event-actions">
+            <button type="button" class="event-action-btn" id="share-btn"
+                    aria-label="Share this event" title="Share">
+                <i class="bi bi-share" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="event-action-btn" id="favorite-btn"
+                    data-slug="{{ event.slug }}"
+                    aria-label="Save to favorites" aria-pressed="false" title="Favorite">
+                <i class="bi bi-heart" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card mb-4">
+            <div id="event-info-card" class="card mb-4">
                 <div class="card-body">
                     {% if event.category %}
                     <span class="badge bg-primary mb-3">{{ event.category.name }}</span>
@@ -29,46 +231,89 @@
                         </div>
                         <div class="col-sm-6">
                             <p class="mb-1"><i class="bi bi-geo-alt me-2 text-primary"></i><strong>Location:</strong> {{ event.location }}</p>
-                            <p class="mb-1"><i class="bi bi-person me-2 text-primary"></i><strong>Organizer:</strong> {{ event.created_by.get_full_name|default:event.created_by.username }}</p>
                         </div>
                     </div>
 
                     <h5>About This Event</h5>
                     <p>{{ event.description|linebreaks }}</p>
+
+                    <div class="organizer-strip">
+                        <div class="organizer-avatar" aria-hidden="true">
+                            {% if event.created_by.profile.avatar %}
+                            <img src="{{ event.created_by.profile.avatar.url }}" alt="">
+                            {% else %}
+                            <i class="bi bi-person-circle"></i>
+                            {% endif %}
+                        </div>
+                        <div class="organizer-info">
+                            <div class="organizer-label">Top Organizer</div>
+                            <div class="organizer-name">
+                                <span class="organizer-by">by</span>{{ event.created_by.get_full_name|default:event.created_by.username }}
+                            </div>
+                            <div class="organizer-meta">
+                                <span class="organizer-followers" data-username="{{ event.created_by.username }}">&nbsp;</span>
+                                <span aria-hidden="true">&middot;</span>
+                                <span>{{ event.created_by.created_events.count }} event{{ event.created_by.created_events.count|pluralize }}</span>
+                                <span aria-hidden="true">&middot;</span>
+                                <span class="organizer-hosting" data-joined="{{ event.created_by.date_joined|date:'Y-m-d' }}">&nbsp;</span>
+                                <span aria-hidden="true">&middot;</span>
+                                <span class="organizer-attendees" data-username="{{ event.created_by.username }}">&nbsp;</span>
+                            </div>
+                        </div>
+                        <button type="button"
+                                class="btn btn-outline-primary organizer-follow-btn"
+                                data-username="{{ event.created_by.username }}"
+                                aria-pressed="false">
+                            <span class="follow-label">Follow</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
             <!-- Ticket Info -->
-            <div class="card mb-4">
+            <div id="ticket-card" class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>Tickets</h5>
                 </div>
-                <div class="card-body">
-                    <p class="mb-2"><strong>Base Price:</strong> ${{ event.price }}</p>
-                    <p class="mb-2"><strong>Capacity:</strong> {{ event.capacity }}</p>
-                    <p class="mb-3">
-                        <strong>Availability:</strong>
+                <div class="card-body d-flex flex-column">
+                    <div class="ticket-availability">
                         {% if event.is_sold_out %}
-                        <span class="badge bg-danger">Sold Out</span>
+                        <span class="ticket-avail-num is-sold-out">0</span>
+                        <span class="ticket-avail-lbl">tickets remaining &middot; <span class="text-danger">Sold out</span></span>
                         {% else %}
-                        <span class="text-success">{{ event.tickets_remaining }} tickets remaining</span>
+                        <span class="ticket-avail-num">{{ event.tickets_remaining }}</span>
+                        <span class="ticket-avail-lbl">tickets remaining</span>
                         {% endif %}
-                    </p>
+                    </div>
+
+                    <div class="ticket-meta">
+                        <div class="ticket-meta-item">
+                            <span class="ticket-meta-lbl">Base price</span>
+                            <span class="ticket-meta-val">${{ event.price }}</span>
+                        </div>
+                        <div class="ticket-meta-item">
+                            <span class="ticket-meta-lbl">Capacity</span>
+                            <span class="ticket-meta-val">{{ event.capacity }}</span>
+                        </div>
+                    </div>
 
                     {% if event.ticket_types.all %}
-                    <h6>Ticket Types</h6>
-                    <ul class="list-group list-group-flush mb-3">
+                    <h6 class="ticket-types-heading">Ticket Types</h6>
+                    <ul class="ticket-type-list">
                         {% for tt in event.ticket_types.all %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            {{ tt.name }}
-                            <span class="badge bg-primary rounded-pill">${{ tt.price }}</span>
+                        <li class="ticket-type-row">
+                            <span class="ticket-type-name">
+                                <i class="bi bi-ticket-perforated" aria-hidden="true"></i>{{ tt.name }}
+                            </span>
+                            <span class="ticket-type-price">${{ tt.price }}</span>
                         </li>
                         {% endfor %}
                     </ul>
                     {% endif %}
 
+                    <div class="ticket-cta mt-auto">
                     {% if user_registration %}
                     <div class="alert alert-success mb-0">
                         <i class="bi bi-check-circle me-2"></i>
@@ -99,9 +344,204 @@
                     {% elif not event.is_upcoming %}
                     <div class="alert alert-secondary mb-0">This event has already passed.</div>
                     {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Location -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Location</h5>
+            <div class="fw-semibold mb-1">{{ event.location }}</div>
+            <a class="map-link text-decoration-none"
+               href="https://www.google.com/maps/search/?api=1&amp;query={{ event.location|urlencode }}"
+               target="_blank" rel="noopener">
+                <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Open in Google Maps
+            </a>
+            <div id="event-map"
+                 class="event-map mt-3"
+                 data-slug="{{ event.slug }}"
+                 aria-label="Map of the event location"></div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script>
+    (function () {
+        // --- Height sync: ticket card matches event info card on lg+ ---
+        var left = document.getElementById('event-info-card');
+        var right = document.getElementById('ticket-card');
+
+        function syncHeight() {
+            if (!left || !right) return;
+            if (window.innerWidth < 992) { right.style.minHeight = ''; return; }
+            right.style.minHeight = '';
+            var h = left.getBoundingClientRect().height;
+            right.style.minHeight = h + 'px';
+        }
+        syncHeight();
+        window.addEventListener('resize', syncHeight);
+        window.addEventListener('load', syncHeight);
+        if ('ResizeObserver' in window && left) {
+            new ResizeObserver(syncHeight).observe(left);
+        }
+
+        // --- Share button ---
+        var shareBtn = document.getElementById('share-btn');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', async function () {
+                var url = window.location.href;
+                var title = document.title;
+                if (navigator.share) {
+                    try { await navigator.share({ title: title, url: url }); } catch (e) { /* user cancelled */ }
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(url);
+                    var origLabel = shareBtn.getAttribute('aria-label');
+                    shareBtn.classList.add('is-copied');
+                    shareBtn.setAttribute('aria-label', 'Link copied to clipboard');
+                    var icon = shareBtn.querySelector('.bi');
+                    var origIconClass = icon.className;
+                    icon.className = 'bi bi-check2';
+                    setTimeout(function () {
+                        shareBtn.classList.remove('is-copied');
+                        shareBtn.setAttribute('aria-label', origLabel);
+                        icon.className = origIconClass;
+                    }, 1500);
+                } catch (e) { /* clipboard denied */ }
+            });
+        }
+
+        // --- Favorite button (localStorage only) ---
+        var favBtn = document.getElementById('favorite-btn');
+        if (favBtn) {
+            var slug = favBtn.dataset.slug;
+            var KEY = 'regpoint_favorites';
+            function getFavs() {
+                try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+                catch (e) { return []; }
+            }
+            function setFavs(arr) {
+                try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {}
+            }
+            function render(isFav) {
+                favBtn.classList.toggle('is-favorited', isFav);
+                favBtn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+                favBtn.setAttribute('aria-label', isFav ? 'Remove from favorites' : 'Save to favorites');
+                var icon = favBtn.querySelector('.bi');
+                if (icon) icon.className = isFav ? 'bi bi-heart-fill' : 'bi bi-heart';
+            }
+            render(getFavs().indexOf(slug) !== -1);
+            favBtn.addEventListener('click', function () {
+                var favs = getFavs();
+                var idx = favs.indexOf(slug);
+                if (idx === -1) { favs.push(slug); }
+                else { favs.splice(idx, 1); }
+                setFavs(favs);
+                render(favs.indexOf(slug) !== -1);
+            });
+        }
+
+        // --- Follow organizer (localStorage only) ---
+        function strHash(s) {
+            var h = 0;
+            for (var i = 0; i < s.length; i++) {
+                h = ((h << 5) - h) + s.charCodeAt(i);
+                h |= 0;
+            }
+            return Math.abs(h);
+        }
+        var FOLLOWED_KEY = 'regpoint_followed_organizers';
+        function getFollowed() {
+            try { return JSON.parse(localStorage.getItem(FOLLOWED_KEY)) || []; }
+            catch (e) { return []; }
+        }
+        function setFollowed(arr) {
+            try { localStorage.setItem(FOLLOWED_KEY, JSON.stringify(arr)); } catch (e) {}
+        }
+        function formatShort(n) {
+            if (n >= 1000) {
+                var k = n / 1000;
+                return (k >= 10 ? Math.round(k) : k.toFixed(1).replace(/\.0$/, '')) + 'k';
+            }
+            return n.toLocaleString();
+        }
+        var followBtn = document.querySelector('.organizer-follow-btn');
+        var followersEl = document.querySelector('.organizer-followers');
+        var hostingEl = document.querySelector('.organizer-hosting');
+        var attendeesEl = document.querySelector('.organizer-attendees');
+        if (followBtn && followersEl) {
+            var username = followBtn.dataset.username;
+            var hashA = strHash(username);
+            var hashB = strHash(username + '_attendees');
+            var baseFollowers = (hashA % 4900) + 100;      // 100–4999
+            var baseAttendees = (hashB % 14000) + 1000;    // 1000–14999
+
+            if (hostingEl) {
+                var joined = hostingEl.dataset.joined;
+                if (joined) {
+                    var years = Math.max(0, Math.floor((Date.now() - new Date(joined).getTime()) / 31557600000));
+                    hostingEl.textContent = (years >= 1 ? years + 'y' : '<1y') + ' hosting';
+                }
+            }
+            if (attendeesEl) {
+                attendeesEl.textContent = formatShort(baseAttendees) + ' total attendees';
+            }
+
+            function renderFollow() {
+                var following = getFollowed().indexOf(username) !== -1;
+                var count = baseFollowers + (following ? 1 : 0);
+                followersEl.textContent = formatShort(count) + ' follower' + (count === 1 ? '' : 's');
+                followBtn.classList.toggle('is-following', following);
+                followBtn.setAttribute('aria-pressed', following ? 'true' : 'false');
+                followBtn.querySelector('.follow-label').textContent = following ? 'Following' : 'Follow';
+            }
+            renderFollow();
+            followBtn.addEventListener('click', function () {
+                var followed = getFollowed();
+                var idx = followed.indexOf(username);
+                if (idx === -1) { followed.push(username); }
+                else { followed.splice(idx, 1); }
+                setFollowed(followed);
+                renderFollow();
+            });
+        }
+
+        // --- Leaflet map ---
+        var mapEl = document.getElementById('event-map');
+        if (mapEl && typeof L !== 'undefined') {
+            var MA_POINTS = [
+                [42.3601, -71.0589, 'Boston'],
+                [42.3736, -71.1097, 'Cambridge'],
+                [42.3876, -71.0995, 'Somerville'],
+                [42.2626, -71.8023, 'Worcester'],
+                [42.1015, -72.5898, 'Springfield'],
+                [42.5195, -70.8967, 'Salem'],
+                [41.9584, -70.6673, 'Plymouth'],
+                [42.0584, -70.1787, 'Provincetown'],
+                [42.3732, -72.5199, 'Amherst'],
+                [42.6334, -71.3162, 'Lowell']
+            ];
+            var slug = mapEl.dataset.slug || '';
+            var sum = 0;
+            for (var i = 0; i < slug.length; i++) { sum += slug.charCodeAt(i); }
+            var pt = MA_POINTS[sum % MA_POINTS.length];
+            var map = L.map(mapEl, { scrollWheelZoom: true }).setView([pt[0], pt[1]], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                maxZoom: 19,
+                subdomains: 'abcd'
+            }).addTo(map);
+            L.marker([pt[0], pt[1]]).addTo(map).bindPopup(pt[2]);
+        }
+    })();
+</script>
 {% endblock %}

@@ -2,100 +2,387 @@
 
 {% block title %}Home{% endblock %}
 
-{% block content %}
-<section class="hero text-center">
-    <div class="container">
-        <h1 class="display-4 fw-bold mb-3">Welcome to RegPoint</h1>
-        <p class="lead mb-4">Nexbridge Marketing Group's online event registration platform.<br>Discover events, register with ease, and manage your tickets in one place.</p>
-        <a href="{% url 'event_list' %}" class="btn btn-light btn-lg me-2">Browse Events</a>
-        {% if not user.is_authenticated %}
-        <a href="{% url 'account_signup' %}" class="btn btn-outline-light btn-lg">Create Account</a>
-        {% endif %}
-    </div>
-</section>
+{% block extra_css %}
+<style>
+    .rp-hero {
+        position: relative;
+        background: var(--nb-bg);
+        color: #fff;
+        padding: 5.5rem 0 7rem;
+        overflow: hidden;
+        border-bottom: 1px solid var(--nb-border);
+    }
+    .rp-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+            radial-gradient(1200px 500px at 15% 20%, rgba(76,157,255,.08), transparent 60%),
+            radial-gradient(900px 400px at 85% 80%, rgba(76,157,255,.06), transparent 60%),
+            var(--nb-dark);
+        -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 100%);
+                mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 100%);
+    }
+    #particles-js {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: auto;
+        -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 50%, transparent 100%);
+                mask-image: linear-gradient(180deg, #000 0%, #000 50%, transparent 100%);
+    }
+    #particles-js .particles-js-canvas-el {
+        -webkit-mask-image: inherit;
+                mask-image: inherit;
+    }
+    .rp-hero > .container { position: relative; z-index: 2; }
+    .rp-hero::after { z-index: 3; }
+    @media (prefers-reduced-motion: reduce) {
+        #particles-js { display: none; }
+    }
+    .rp-hero::after {
+        content: "";
+        position: absolute;
+        left: 0; right: 0; bottom: -1px;
+        height: 80px;
+        clip-path: ellipse(70% 100% at 50% 100%);
+    }
+    .rp-hero h1 {
+        font-size: clamp(2.25rem, 4vw, 3.5rem);
+        font-weight: 700;
+        letter-spacing: -.02em;
+        line-height: 1.1;
+    }
+    .rp-hero .lead { color: rgba(255,255,255,.8); font-size: 1.125rem; }
+    .rp-hero-list { list-style: none; padding: 0; margin: 1.75rem 0; }
+    .rp-hero-list li {
+        display: flex; align-items: center; gap: .65rem;
+        padding: .35rem 0; font-size: 1rem;
+    }
+    .rp-hero-list .bi {
+        color: var(--nb-accent); font-size: 1.1rem; flex-shrink: 0;
+    }
+    .rp-hero .btn-cta {
+        background: var(--nb-accent); border-color: var(--nb-accent);
+        color: #fff; font-weight: 600; padding: .75rem 1.5rem;
+    }
+    .rp-hero .btn-cta:hover,
+    .rp-hero .btn-cta:focus-visible { background: #1b6fd4; border-color: #1b6fd4; }
+    .rp-hero-link {
+        color: #fff; font-weight: 500; margin-left: 1rem;
+        text-decoration: none; display: inline-flex; align-items: center; gap: .35rem;
+    }
+    .rp-hero-link:hover,
+    .rp-hero-link:focus-visible { color: #fff; text-decoration: underline; }
 
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="row g-4 text-center">
-            <div class="col-md-4">
-                <div class="card stat-card h-100 p-4">
-                    <i class="bi bi-calendar-event fs-1 text-primary mb-3"></i>
-                    <h3 class="fw-bold">{{ total_events }}</h3>
-                    <p class="text-muted mb-0">Active Events</p>
+    /* --- Dashboard-preview mock (dark, reflecting the actual app UI) --- */
+    .rp-preview {
+        position: relative;
+        background: linear-gradient(180deg, #101829 0%, #0d1324 100%);
+        color: var(--nb-text);
+        border-radius: 14px;
+        border: 1px solid var(--nb-border);
+        box-shadow: 0 35px 80px -25px rgba(0,0,0,.8),
+                    0 15px 35px -10px rgba(0,0,0,.55);
+        padding: 1.25rem;
+        transform: perspective(1500px) rotateY(-4deg) rotateX(2deg);
+    }
+    .rp-preview::before {
+        content: "";
+        position: absolute;
+        top: -20px; left: 20px; right: 20px; height: 40px;
+        background: rgba(76,157,255,.08); border-radius: 14px;
+        filter: blur(14px); z-index: -1;
+    }
+    .rp-preview .rp-p-head {
+        display: flex; align-items: center; gap: .5rem;
+        padding-bottom: .75rem; border-bottom: 1px solid var(--nb-border);
+        margin-bottom: .9rem;
+    }
+    .rp-preview .rp-p-dot {
+        width: 10px; height: 10px; border-radius: 50%; background: var(--nb-border-strong);
+    }
+    .rp-preview .rp-p-stats { display: flex; gap: .75rem; margin-bottom: .9rem; }
+    .rp-preview .rp-p-stat {
+        flex: 1; border: 1px solid var(--nb-border); border-radius: 8px;
+        padding: .65rem .75rem; background: rgba(255,255,255,.02);
+    }
+    .rp-preview .rp-p-stat .num { font-size: 1.1rem; font-weight: 700; color: var(--nb-text); }
+    .rp-preview .rp-p-stat .lbl { font-size: .7rem; color: var(--nb-text-muted); }
+    .rp-preview .rp-p-event {
+        display: flex; align-items: center; gap: .65rem;
+        padding: .6rem .65rem; border: 1px solid var(--nb-border);
+        border-radius: 8px; margin-bottom: .45rem;
+        background: rgba(255,255,255,.02);
+    }
+    .rp-preview .rp-p-event .chip {
+        font-size: .62rem; padding: .15rem .4rem;
+        background: rgba(76,157,255,.18); color: #8bb8ff;
+        border: 1px solid rgba(76,157,255,.28);
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .rp-preview .rp-p-event .title {
+        font-weight: 600; font-size: .78rem; color: var(--nb-text);
+    }
+    .rp-preview .rp-p-event .meta {
+        font-size: .68rem; color: var(--nb-text-muted);
+    }
+    .rp-preview .rp-p-event .price {
+        margin-left: auto; font-weight: 700; color: var(--nb-accent); font-size: .82rem;
+    }
+    .rp-preview .text-muted {
+        color: var(--nb-text-muted) !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .rp-preview { transform: none; }
+    }
+    @media (max-width: 767.98px) {
+        .rp-hero { padding: 3.5rem 0 5rem; text-align: left; }
+        .rp-preview { transform: none; margin-top: 2.5rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="rp-hero" aria-labelledby="hero-heading">
+    <div id="particles-js" aria-hidden="true"></div>
+    <div class="container position-relative" style="z-index:1;">
+        <div class="row align-items-center g-5">
+            <div class="col-md-6">
+                <h1 id="hero-heading" class="mb-3">Run professional events. Without the overhead.</h1>
+                <p class="lead mb-0">
+                    RegPoint is Nexbridge Marketing Group's registration platform for workshops, conferences, and product launches.
+                </p>
+
+                <ul class="rp-hero-list" aria-label="Key features">
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i>Publish an event and collect registrations in minutes</li>
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i>Secure sign-in with passkeys and two-factor auth</li>
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i>Real-time dashboards for organizers</li>
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i>Email confirmations and unique ticket codes</li>
+                </ul>
+
+                <div class="d-flex flex-wrap align-items-center">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-cta btn-lg">Open Dashboard</a>
+                    <a href="{% url 'event_list' %}" class="rp-hero-link">
+                        Browse events <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'account_signup' %}" class="btn btn-cta btn-lg">Create an Account</a>
+                    <a href="{% url 'event_list' %}" class="rp-hero-link">
+                        Browse events <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card stat-card h-100 p-4">
-                    <i class="bi bi-people fs-1 text-primary mb-3"></i>
-                    <h3 class="fw-bold">{{ total_registrations }}</h3>
-                    <p class="text-muted mb-0">Total Registrations</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stat-card h-100 p-4">
-                    <i class="bi bi-tags fs-1 text-primary mb-3"></i>
-                    <h3 class="fw-bold">{{ categories|length }}</h3>
-                    <p class="text-muted mb-0">Event Categories</p>
+
+            <div class="col-md-6">
+                <div class="rp-preview" role="img" aria-label="Preview of the RegPoint organizer dashboard showing active events, registrations, and categories">
+                    <div class="rp-p-head">
+                        <span class="rp-p-dot"></span>
+                        <span class="rp-p-dot"></span>
+                        <span class="rp-p-dot"></span>
+                        <span class="ms-auto small text-muted">regpoint.app / dashboard</span>
+                    </div>
+                    <div class="rp-p-stats">
+                        <div class="rp-p-stat"><div class="num">{{ total_events|default:6 }}</div><div class="lbl">Active Events</div></div>
+                        <div class="rp-p-stat"><div class="num">{{ total_registrations|default:124 }}</div><div class="lbl">Registrations</div></div>
+                        <div class="rp-p-stat"><div class="num">{{ categories|length|default:5 }}</div><div class="lbl">Categories</div></div>
+                    </div>
+                    <div class="rp-p-event">
+                        <span class="chip">Conference</span>
+                        <div>
+                            <div class="title">Digital Marketing Summit 2026</div>
+                            <div class="meta">May 14 · New York, NY</div>
+                        </div>
+                        <span class="price">$199</span>
+                    </div>
+                    <div class="rp-p-event">
+                        <span class="chip">Workshop</span>
+                        <div>
+                            <div class="title">SEO Mastery Workshop</div>
+                            <div class="meta">Apr 28 · Austin, TX</div>
+                        </div>
+                        <span class="price">$79</span>
+                    </div>
+                    <div class="rp-p-event">
+                        <span class="chip">Networking</span>
+                        <div>
+                            <div class="title">CMO Networking Mixer</div>
+                            <div class="meta">May 05 · Chicago, IL</div>
+                        </div>
+                        <span class="price">$49</span>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+</section>
+
+<section class="section-pad">
+    <div class="container">
+        <div class="mb-4">
+            <h2 class="h3 mb-1">RegPoint at a glance</h2>
+            <p class="text-muted mb-0">A quick snapshot of activity across the platform.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="stat-card h-100">
+                    <span class="stat-card__icon"><i class="bi bi-calendar-event" aria-hidden="true"></i></span>
+                    <p class="stat-card__num">{{ total_events }}</p>
+                    <p class="stat-card__lbl">Active Events</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card h-100">
+                    <span class="stat-card__icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                    <p class="stat-card__num">{{ total_registrations }}</p>
+                    <p class="stat-card__lbl">Total Registrations</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card h-100">
+                    <span class="stat-card__icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
+                    <p class="stat-card__num">{{ categories|length }}</p>
+                    <p class="stat-card__lbl">Event Categories</p>
+                </div>
+            </div>
+        </div>
+        <div class="divider-sm" aria-hidden="true"></div>
     </div>
 </section>
 
 {% if upcoming_events %}
-<section class="py-5">
+<section class="section-pad">
     <div class="container">
-        <h2 class="mb-4">Upcoming Events</h2>
+        <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+            <div>
+                <h2 class="h3 mb-1">Upcoming Events</h2>
+                <p class="text-muted mb-0">Registrations are open — secure your spot.</p>
+            </div>
+            <a href="{% url 'event_list' %}" class="text-decoration-none">
+                See all <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
         <div class="row g-4">
             {% for event in upcoming_events %}
-            <div class="col-md-4">
-                <div class="card card-event h-100">
-                    <div class="card-body d-flex flex-column">
-                        {% if event.category %}
-                        <span class="badge bg-primary mb-2 align-self-start">{{ event.category.name }}</span>
-                        {% endif %}
-                        <h5 class="card-title">{{ event.title }}</h5>
-                        <p class="text-muted small">
-                            <i class="bi bi-calendar me-1"></i>{{ event.date|date:"M d, Y g:i A" }}<br>
-                            <i class="bi bi-geo-alt me-1"></i>{{ event.location }}
-                        </p>
-                        <p class="card-text flex-grow-1">{{ event.description|truncatewords:25 }}</p>
-                        <div class="d-flex justify-content-between align-items-center mt-auto">
-                            <span class="fw-bold text-primary">${{ event.price }}</span>
-                            <a href="{% url 'event_detail' event.slug %}" class="btn btn-accent btn-sm">View Details</a>
-                        </div>
+            <div class="col-md-6 col-lg-4">
+                <article class="card-event h-100 d-flex flex-column p-4">
+                    {% if event.category %}
+                    <span class="event-chip mb-3 align-self-start">{{ event.category.name }}</span>
+                    {% endif %}
+                    <h3 class="h6 fw-bold mb-2">{{ event.title }}</h3>
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-calendar me-1" aria-hidden="true"></i>{{ event.date|date:"M d, Y · g:i A" }}<br>
+                        <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ event.location }}
+                    </p>
+                    <p class="small text-body-secondary flex-grow-1 mb-3">{{ event.description|truncatewords:22 }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                        <span class="fw-bold" style="color:var(--nb-primary);">${{ event.price }}</span>
+                        <a href="{% url 'event_detail' event.slug %}" class="btn btn-sm btn-accent">View Details</a>
                     </div>
-                </div>
+                </article>
             </div>
             {% endfor %}
-        </div>
-        <div class="text-center mt-4">
-            <a href="{% url 'event_list' %}" class="btn btn-outline-primary">View All Events</a>
         </div>
     </div>
 </section>
 {% endif %}
 
-<section class="py-5 bg-light">
-    <div class="container text-center">
-        <h2 class="mb-3">Why RegPoint?</h2>
-        <div class="row g-4 mt-2">
+<section class="section-pad section-hairline">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="h3 mb-2">Why RegPoint</h2>
+            <p class="text-muted mb-0">Built for teams that take events seriously.</p>
+        </div>
+        <div class="row g-4">
             <div class="col-md-4">
-                <i class="bi bi-shield-check fs-1 text-primary mb-3 d-block"></i>
-                <h5>Secure Registration</h5>
-                <p class="text-muted">Industry-standard authentication with password policies and security questions.</p>
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 rounded-3 d-inline-flex align-items-center justify-content-center me-3"
+                         style="width:44px;height:44px;background:rgba(76,157,255,.14);color:var(--nb-accent);border:1px solid rgba(76,157,255,.22);">
+                        <i class="bi bi-shield-check fs-5" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 class="h6 mb-2">Secure Registration</h3>
+                        <p class="text-muted small mb-0">Passkeys, TOTP, OAuth, and email verification backed by industry-standard auth.</p>
+                    </div>
+                </div>
             </div>
             <div class="col-md-4">
-                <i class="bi bi-lightning fs-1 text-primary mb-3 d-block"></i>
-                <h5>Easy Booking</h5>
-                <p class="text-muted">Browse events, select tickets, and get instant confirmation codes.</p>
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 rounded-3 d-inline-flex align-items-center justify-content-center me-3"
+                         style="width:44px;height:44px;background:rgba(76,157,255,.14);color:var(--nb-accent);border:1px solid rgba(76,157,255,.22);">
+                        <i class="bi bi-lightning fs-5" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 class="h6 mb-2">Fast Booking</h3>
+                        <p class="text-muted small mb-0">Browse, select tickets, and get an instant confirmation code by email.</p>
+                    </div>
+                </div>
             </div>
             <div class="col-md-4">
-                <i class="bi bi-bar-chart fs-1 text-primary mb-3 d-block"></i>
-                <h5>Sales Dashboard</h5>
-                <p class="text-muted">Real-time reporting and analytics for event organizers.</p>
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 rounded-3 d-inline-flex align-items-center justify-content-center me-3"
+                         style="width:44px;height:44px;background:rgba(76,157,255,.14);color:var(--nb-accent);border:1px solid rgba(76,157,255,.22);">
+                        <i class="bi bi-bar-chart fs-5" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 class="h6 mb-2">Organizer Reports</h3>
+                        <p class="text-muted small mb-0">Real-time dashboards, registration exports, and per-event revenue breakdowns.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"
+        integrity="sha384-oHYQNeDBTZNj6KnIfJMAzcEn2OTbeMKKXFeEwU6T+pH0oS1yTIzEBaW6BXmCtvs2"
+        crossorigin="anonymous"></script>
+<script>
+(function () {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+    }
+    if (typeof particlesJS !== 'function') { return; }
+    particlesJS('particles-js', {
+        particles: {
+            number: { value: 55, density: { enable: true, value_area: 900 } },
+            color: { value: '#4c9dff' },
+            shape: { type: 'circle' },
+            opacity: {
+                value: 0.45, random: true,
+                anim: { enable: true, speed: 0.6, opacity_min: 0.1, sync: false }
+            },
+            size: { value: 2.6, random: true },
+            line_linked: {
+                enable: true, distance: 140,
+                color: '#4c9dff', opacity: 0.22, width: 1
+            },
+            move: {
+                enable: true, speed: 1.1, direction: 'none',
+                random: true, straight: false, out_mode: 'out'
+            }
+        },
+        interactivity: {
+            detect_on: 'canvas',
+            events: {
+                onhover: { enable: true, mode: 'grab' },
+                onclick: { enable: true, mode: 'push' },
+                resize: true
+            },
+            modes: {
+                grab: { distance: 160, line_linked: { opacity: 0.5 } },
+                push: { particles_nb: 3 }
+            }
+        },
+        retina_detect: true
+    });
+})();
+</script>
 {% endblock %}

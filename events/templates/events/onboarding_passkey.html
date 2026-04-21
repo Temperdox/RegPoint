@@ -1,0 +1,62 @@
+{% extends "events/base.html" %}
+
+{% block title %}Create a Passkey{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm auth-card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <a href="{% url 'onboarding_phone' %}"
+                           class="btn btn-sm btn-light auth-back"
+                           aria-label="Back to phone step">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
+                        <span class="text-muted small">Step {{ step }} of {{ total_steps }}</span>
+                        <span class="invisible" aria-hidden="true">
+                            <i class="bi bi-chevron-left"></i>
+                        </span>
+                    </div>
+
+                    <div class="text-center mb-3">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width:56px;height:56px;">
+                            <i class="bi bi-fingerprint fs-3 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h1 class="h4 mb-2">Create a Passkey</h1>
+                        <p class="text-muted small mb-0">
+                            Passkeys are a fast and secure way to sign in.
+                        </p>
+                    </div>
+
+                    <ul class="list-unstyled mt-4 mb-4 small">
+                        <li class="d-flex align-items-start mb-2">
+                            <i class="bi bi-key text-primary me-2 mt-1" aria-hidden="true"></i>
+                            <span>Sign in without a password or code</span>
+                        </li>
+                        <li class="d-flex align-items-start mb-2">
+                            <i class="bi bi-shield-lock text-primary me-2 mt-1" aria-hidden="true"></i>
+                            <span>Encrypted by your device</span>
+                        </li>
+                        <li class="d-flex align-items-start mb-2">
+                            <i class="bi bi-phone text-primary me-2 mt-1" aria-hidden="true"></i>
+                            <span>Works across all your devices</span>
+                        </li>
+                    </ul>
+                    <p class="text-muted small mb-4">
+                        Your existing password will still work. You can update your sign-in methods any time from Account Settings.
+                    </p>
+
+                    <a href="{% url 'mfa_add_webauthn' %}" class="btn btn-accent w-100">Create Passkey</a>
+                    <form method="post" class="mt-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link w-100 text-muted">Not Now</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

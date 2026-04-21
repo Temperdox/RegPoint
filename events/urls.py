@@ -16,6 +16,11 @@ urlpatterns = [
     # OTP MFA
     path("accounts/mfa/otp/", views.mfa_otp_setup, name="mfa_otp_setup"),
     path("accounts/mfa/otp/verify/", views.mfa_otp_verify, name="mfa_otp_verify"),
+    # Post-signup onboarding wizard (profile → phone → passkey → MFA)
+    path("onboarding/profile/", views.onboarding_profile, name="onboarding_profile"),
+    path("onboarding/phone/", views.onboarding_phone, name="onboarding_phone"),
+    path("onboarding/passkey/", views.onboarding_passkey, name="onboarding_passkey"),
+    path("onboarding/mfa/", views.onboarding_mfa, name="onboarding_mfa"),
     # User Dashboard & Profile
     path("dashboard/", views.dashboard, name="dashboard"),
     path("profile/", views.profile, name="profile"),

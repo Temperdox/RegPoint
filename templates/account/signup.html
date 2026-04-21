@@ -6,44 +6,55 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-7">
-            <div class="card shadow-sm">
+        <div class="col-md-6 col-lg-5" style="max-width:480px;">
+            <div class="card shadow-sm auth-card">
                 <div class="card-body p-4">
-                    <h3 class="text-center mb-4"><i class="bi bi-person-plus me-2"></i>Create Account</h3>
-
-                    <!-- Passkey Signup -->
-                    <div class="text-center mb-3">
-                        <a href="{% url 'mfa_signup_webauthn' %}" class="btn btn-outline-dark w-100">
-                            <i class="bi bi-fingerprint me-2"></i>Sign up with Passkey
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <a href="{% url 'home' %}"
+                           class="btn btn-sm btn-light auth-back"
+                           aria-label="Back to home">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
                         </a>
+                        <span class="text-muted small" aria-label="Progress">Step 1 of 5</span>
+                        <span class="invisible" aria-hidden="true">
+                            <i class="bi bi-chevron-left"></i>
+                        </span>
                     </div>
 
-                    <hr>
+                    <h1 class="h3 text-center mb-1">
+                        <i class="bi bi-person-plus me-2" aria-hidden="true"></i>Create Account
+                    </h1>
+                    <p class="text-center text-muted small mb-4">
+                        You can add a phone, passkey, and two-factor auth in the next steps.
+                    </p>
 
                     <!-- Social Signup Buttons -->
-                    <p class="text-center text-muted small mb-3">Or sign up with</p>
+                    <p class="text-center text-muted small mb-3">Sign up with</p>
                     <div class="row g-2 mb-3">
                         <div class="col-4">
                             <a href="{% provider_login_url 'google' %}" class="btn btn-outline-danger w-100">
-                                <i class="bi bi-google me-1"></i>Google
+                                <i class="bi bi-google me-1" aria-hidden="true"></i>Google
                             </a>
                         </div>
                         <div class="col-4">
                             <a href="{% provider_login_url 'microsoft' %}" class="btn btn-outline-primary w-100">
-                                <i class="bi bi-microsoft me-1"></i>Microsoft
+                                <i class="bi bi-microsoft me-1" aria-hidden="true"></i>Microsoft
                             </a>
                         </div>
                         <div class="col-4">
                             <a href="{% provider_login_url 'github' %}" class="btn btn-outline-dark w-100">
-                                <i class="bi bi-github me-1"></i>GitHub
+                                <i class="bi bi-github me-1" aria-hidden="true"></i>GitHub
                             </a>
                         </div>
                     </div>
 
-                    <hr>
-                    <p class="text-center text-muted small mb-3">Or create an account with email</p>
+                    <div class="d-flex align-items-center my-4" role="separator" aria-label="or">
+                        <hr class="flex-grow-1 my-0">
+                        <span class="px-3 text-muted small">or with email</span>
+                        <hr class="flex-grow-1 my-0">
+                    </div>
 
-                    <form method="post" action="{% url 'account_signup' %}">
+                    <form method="post" action="{% url 'account_signup' %}" novalidate>
                         {% csrf_token %}
                         {% for field in form %}
                         <div class="mb-3">
@@ -96,7 +107,7 @@
                         {% if redirect_field_value %}
                         <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
                         {% endif %}
-                        <button type="submit" class="btn btn-accent w-100 mb-3">Create Account</button>
+                        <button type="submit" class="btn btn-accent w-100 mb-3">Continue</button>
                     </form>
 
                     <p class="text-center text-muted mb-0">

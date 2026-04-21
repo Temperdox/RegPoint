@@ -138,9 +138,10 @@ ACCOUNT_LOGIN_METHODS = {"username", "email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
-ACCOUNT_SIGNUP_REDIRECT_URL = "dashboard"
+ACCOUNT_SIGNUP_REDIRECT_URL = "onboarding_profile"
 ACCOUNT_LOGOUT_REDIRECT_URL = "home"
-ACCOUNT_SIGNUP_FORM_CLASS = "events.forms.AllauthSignUpForm"
+# No custom signup form — step 1 only collects email/username/password.
+# First/last name and security Q/A are captured in later onboarding steps or on the Profile page.
 
 # ─── django-allauth Social Auth ───
 SOCIALACCOUNT_PROVIDERS = {

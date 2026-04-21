@@ -47,31 +47,29 @@
     {% if events %}
     <div class="row g-4">
         {% for event in events %}
-        <div class="col-md-4">
-            <div class="card card-event h-100">
-                <div class="card-body d-flex flex-column">
-                    {% if event.category %}
-                    <span class="badge bg-primary mb-2 align-self-start">{{ event.category.name }}</span>
-                    {% endif %}
-                    <h5 class="card-title">{{ event.title }}</h5>
-                    <p class="text-muted small mb-2">
-                        <i class="bi bi-calendar me-1"></i>{{ event.date|date:"M d, Y g:i A" }}<br>
-                        <i class="bi bi-geo-alt me-1"></i>{{ event.location }}
-                    </p>
-                    <p class="card-text flex-grow-1">{{ event.description|truncatewords:20 }}</p>
-                    <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <div>
-                            <span class="fw-bold text-primary">${{ event.price }}</span>
-                            {% if event.is_sold_out %}
-                            <span class="badge bg-danger ms-2">Sold Out</span>
-                            {% else %}
-                            <span class="text-muted small ms-2">{{ event.tickets_remaining }} left</span>
-                            {% endif %}
-                        </div>
-                        <a href="{% url 'event_detail' event.slug %}" class="btn btn-accent btn-sm">Details</a>
+        <div class="col-md-6 col-lg-4">
+            <article class="card-event h-100 d-flex flex-column p-4">
+                {% if event.category %}
+                <span class="event-chip mb-3 align-self-start">{{ event.category.name }}</span>
+                {% endif %}
+                <h3 class="h6 fw-bold mb-2">{{ event.title }}</h3>
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-calendar me-1" aria-hidden="true"></i>{{ event.date|date:"M d, Y · g:i A" }}<br>
+                    <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ event.location }}
+                </p>
+                <p class="small text-body-secondary flex-grow-1 mb-3">{{ event.description|truncatewords:20 }}</p>
+                <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                    <div>
+                        <span class="fw-bold" style="color:var(--nb-primary);">${{ event.price }}</span>
+                        {% if event.is_sold_out %}
+                        <span class="badge bg-danger ms-2">Sold Out</span>
+                        {% else %}
+                        <span class="text-muted small ms-2">{{ event.tickets_remaining }} left</span>
+                        {% endif %}
                     </div>
+                    <a href="{% url 'event_detail' event.slug %}" class="btn btn-sm btn-accent">Details</a>
                 </div>
-            </div>
+            </article>
         </div>
         {% endfor %}
     </div>

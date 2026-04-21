@@ -38,38 +38,25 @@ class SignUpForm(UserCreationForm):
             ).title()
 
 
-class AllauthSignUpForm(forms.Form):
-    """Extra fields injected into the allauth signup form."""
+class OnboardingProfileForm(forms.Form):
+    """Step 2 of the signup wizard — required first + last name."""
 
-    first_name = forms.CharField(max_length=30, required=True,
-                                 widget=forms.TextInput(attrs={"class": "form-control"}))
-    last_name = forms.CharField(max_length=30, required=True,
-                                widget=forms.TextInput(attrs={"class": "form-control"}))
-    phone = forms.CharField(max_length=20, required=False,
-                            widget=forms.TextInput(attrs={"class": "form-control"}))
-    company = forms.CharField(max_length=200, required=False,
-                              widget=forms.TextInput(attrs={"class": "form-control"}))
-    security_question = forms.CharField(
-        max_length=200, required=True,
-        help_text="e.g., What is your pet's name?",
-        widget=forms.TextInput(attrs={"class": "form-control"}),
+    first_name = forms.CharField(
+        max_length=30, required=True,
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-lg",
+            "autocomplete": "given-name",
+            "placeholder": "Jane",
+        }),
     )
-    security_answer = forms.CharField(
-        max_length=200, required=True,
-        widget=forms.TextInput(attrs={"class": "form-control"}),
+    last_name = forms.CharField(
+        max_length=30, required=True,
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-lg",
+            "autocomplete": "family-name",
+            "placeholder": "Doe",
+        }),
     )
-
-    def signup(self, request, user):
-        user.first_name = self.cleaned_data["first_name"]
-        user.last_name = self.cleaned_data["last_name"]
-        user.save()
-        # Profile is created via signal; update extra fields
-        profile = user.profile
-        profile.phone = self.cleaned_data.get("phone", "")
-        profile.company = self.cleaned_data.get("company", "")
-        profile.security_question = self.cleaned_data["security_question"]
-        profile.security_answer = self.cleaned_data["security_answer"]
-        profile.save()
 
 
 class EmailOTPForm(forms.Form):
@@ -92,7 +79,14 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["phone", "company", "bio", "avatar"]
+        fields = [
+            "phone", "company", "bio", "avatar",
+            "security_question", "security_answer",
+        ]
+        help_texts = {
+            "security_question": "e.g., What is your pet's name?",
+            "security_answer": "Used for account recovery. Keep it memorable.",
+        }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)

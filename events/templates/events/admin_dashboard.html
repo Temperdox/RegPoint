@@ -9,27 +9,31 @@
     <!-- Summary Stats -->
     <div class="row g-4 mb-4">
         <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <h6 class="text-muted mb-1">Total Events</h6>
-                <h3 class="mb-0">{{ total_events }}</h3>
+            <div class="stat-card h-100">
+                <span class="stat-card__icon"><i class="bi bi-calendar-event" aria-hidden="true"></i></span>
+                <p class="stat-card__num">{{ total_events }}</p>
+                <p class="stat-card__lbl">Total Events</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <h6 class="text-muted mb-1">Active Events</h6>
-                <h3 class="mb-0">{{ active_events }}</h3>
+            <div class="stat-card h-100">
+                <span class="stat-card__icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                <p class="stat-card__num">{{ active_events }}</p>
+                <p class="stat-card__lbl">Active Events</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <h6 class="text-muted mb-1">Total Registrations</h6>
-                <h3 class="mb-0">{{ total_registrations }}</h3>
+            <div class="stat-card h-100">
+                <span class="stat-card__icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                <p class="stat-card__num">{{ total_registrations }}</p>
+                <p class="stat-card__lbl">Total Registrations</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <h6 class="text-muted mb-1">Total Revenue</h6>
-                <h3 class="mb-0">${{ total_revenue }}</h3>
+            <div class="stat-card h-100">
+                <span class="stat-card__icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+                <p class="stat-card__num">${{ total_revenue }}</p>
+                <p class="stat-card__lbl">Total Revenue</p>
             </div>
         </div>
     </div>

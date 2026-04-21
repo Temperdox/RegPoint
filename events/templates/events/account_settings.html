@@ -5,14 +5,14 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h2 class="mb-4"><i class="bi bi-gear me-2"></i>Account Settings</h2>
+        <div class="col-md-10 col-lg-9">
+            <h1 class="h3 mb-4"><i class="bi bi-gear me-2" aria-hidden="true"></i>Account Settings</h1>
 
             <div class="row g-4">
                 <!-- Account Info -->
                 <div class="col-md-6">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header"><h5 class="mb-0">Account Information</h5></div>
+                        <div class="card-header"><h2 class="h6 mb-0">Account Information</h2></div>
                         <div class="card-body">
                             <div class="mb-3">
                                 <div class="form-label text-muted small">Username</div>
@@ -43,16 +43,16 @@
                     </div>
                 </div>
 
-                <!-- Quick Links -->
+                <!-- Profile -->
                 <div class="col-md-6">
                     <div class="card shadow-sm mb-4">
-                        <div class="card-header"><h5 class="mb-0">Profile</h5></div>
+                        <div class="card-header"><h2 class="h6 mb-0">Profile</h2></div>
                         <div class="card-body">
                             <div class="text-center mb-3">
                                 {% if user.profile.avatar %}
                                 <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle mb-2" style="width:80px;height:80px;object-fit:cover;">
                                 {% else %}
-                                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-2" style="width:80px;height:80px;">
+                                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-2" style="width:80px;height:80px;" aria-hidden="true">
                                     <span class="text-white fs-2">{{ user.first_name|first|default:user.username|first|upper }}</span>
                                 </div>
                                 {% endif %}
@@ -60,23 +60,99 @@
                                 <p class="text-muted small">{{ user.email }}</p>
                             </div>
                             <a href="{% url 'profile' %}" class="btn btn-outline-primary w-100 mb-2">
-                                <i class="bi bi-pencil me-1"></i>Edit Profile & Avatar
+                                <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit Profile &amp; Avatar
                             </a>
                             <a href="{% url 'socialaccount_connections' %}" class="btn btn-outline-secondary w-100">
-                                <i class="bi bi-link-45deg me-1"></i>Connected Accounts
+                                <i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Connected Accounts
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="card shadow-sm border-danger">
-                        <div class="card-header bg-danger text-white"><h5 class="mb-0">Danger Zone</h5></div>
-                        <div class="card-body">
-                            <p class="text-muted small">Permanently delete your account and all associated data. This action cannot be undone.</p>
-                            <a href="{% url 'delete_account' %}" class="btn btn-outline-danger w-100">
-                                <i class="bi bi-trash me-1"></i>Delete Account
-                            </a>
+            <!-- Security -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header"><h2 class="h6 mb-0"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>Security</h2></div>
+                <div class="card-body">
+                    <p class="text-muted small mb-4">
+                        Protect your account with a passkey, an authenticator app, or recovery codes. You can enable any combination.
+                    </p>
+
+                    <div class="row g-3">
+                        <!-- Passkey -->
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-fingerprint fs-4 text-primary me-2" aria-hidden="true"></i>
+                                    <strong>Passkey</strong>
+                                    {% if passkey_enrolled %}
+                                    <span class="badge bg-success ms-auto">Enrolled</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary ms-auto">Not set</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted small flex-grow-1">Sign in with your device's biometric or security key.</p>
+                                {% if passkey_enrolled %}
+                                <a href="{% url 'mfa_list_webauthn' %}" class="btn btn-sm btn-outline-primary">Manage</a>
+                                {% else %}
+                                <a href="{% url 'mfa_add_webauthn' %}" class="btn btn-sm btn-accent">Add Passkey</a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Authenticator App -->
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-phone fs-4 text-primary me-2" aria-hidden="true"></i>
+                                    <strong>Authenticator App</strong>
+                                    {% if totp_enrolled %}
+                                    <span class="badge bg-success ms-auto">Enrolled</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary ms-auto">Not set</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted small flex-grow-1">Time-based 6-digit codes from Google Authenticator, Authy, 1Password, etc.</p>
+                                {% if totp_enrolled %}
+                                <a href="{% url 'mfa_deactivate_totp' %}" class="btn btn-sm btn-outline-danger">Disable</a>
+                                {% else %}
+                                <a href="{% url 'mfa_activate_totp' %}" class="btn btn-sm btn-accent">Enable</a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Recovery Codes -->
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-key fs-4 text-primary me-2" aria-hidden="true"></i>
+                                    <strong>Recovery Codes</strong>
+                                    {% if recovery_codes_enrolled %}
+                                    <span class="badge bg-success ms-auto">Generated</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary ms-auto">Not set</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted small flex-grow-1">One-time backup codes for account recovery if you lose your device.</p>
+                                {% if recovery_codes_enrolled %}
+                                <a href="{% url 'mfa_view_recovery_codes' %}" class="btn btn-sm btn-outline-primary">View</a>
+                                {% else %}
+                                <a href="{% url 'mfa_view_recovery_codes' %}" class="btn btn-sm btn-accent">Generate</a>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Danger -->
+            <div class="card shadow-sm border-danger mt-4">
+                <div class="card-header bg-danger text-white"><h2 class="h6 mb-0">Danger Zone</h2></div>
+                <div class="card-body">
+                    <p class="text-muted small">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                    <a href="{% url 'delete_account' %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1" aria-hidden="true"></i>Delete Account
+                    </a>
                 </div>
             </div>
         </div>

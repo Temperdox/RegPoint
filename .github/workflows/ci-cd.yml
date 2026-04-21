@@ -79,6 +79,10 @@ jobs:
     name: "Django Tests"
     runs-on: ubuntu-latest
     needs: [sast-bandit, dependency-scan, secret-scan]
+    env:
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'ci-testing-fallback-not-for-prod' }}
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: "testserver,localhost,127.0.0.1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

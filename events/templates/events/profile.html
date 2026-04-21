@@ -60,6 +60,26 @@
                                     <label class="form-label" for="{{ form.bio.id_for_label }}">Bio</label>
                                     {{ form.bio }}
                                 </div>
+
+                                <hr class="my-4">
+                                <h5 class="mb-3">Account Recovery</h5>
+                                <p class="text-muted small">A security question helps you recover your account if you lose access.</p>
+                                <div class="mb-3">
+                                    <label class="form-label" for="{{ form.security_question.id_for_label }}">Security Question</label>
+                                    {{ form.security_question }}
+                                    {% if form.security_question.help_text %}
+                                    <div class="form-text">{{ form.security_question.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.security_question.errors %}<div class="text-danger small">{{ form.security_question.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="{{ form.security_answer.id_for_label }}">Security Answer</label>
+                                    {{ form.security_answer }}
+                                    {% if form.security_answer.help_text %}
+                                    <div class="form-text">{{ form.security_answer.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.security_answer.errors %}<div class="text-danger small">{{ form.security_answer.errors.0 }}</div>{% endif %}
+                                </div>
                                 <button type="submit" class="btn btn-accent w-100">Save Changes</button>
                             </form>
                         </div>
