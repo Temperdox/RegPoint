@@ -95,6 +95,8 @@ jobs:
           pip install coverage
       - name: Run migrations
         run: python manage.py migrate --noinput
+      - name: Collect static files (for manifest storage)
+        run: python manage.py collectstatic --noinput
       - name: Run tests with coverage
         run: coverage run manage.py test events --verbosity=2
       - name: Coverage report
