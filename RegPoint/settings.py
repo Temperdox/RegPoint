@@ -79,11 +79,14 @@ WSGI_APPLICATION = "RegPoint.wsgi.application"
 #   sqlite:///absolute/path/to/db.sqlite3
 # Falls back to a local SQLite file if DATABASE_URL is unset (dev convenience).
 DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+    "default": {
+        **dj_database_url.config(
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=600,
+            conn_health_checks=True,
+        ),
+        "ATOMIC_REQUESTS": True,
+    }
 }
 
 # Azure Database for PostgreSQL Flexible Server enforces TLS by default.
