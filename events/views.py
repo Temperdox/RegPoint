@@ -131,9 +131,10 @@ def home(request):
 
 
 def event_list(request):
-    events = Event.objects.filter(is_active=True).select_related(
-        "category", "created_by"
-    )
+    now = timezone.now()
+    events = Event.objects.filter(is_active=True).filter(
+        Q(expires_at__isnull=True) | Q(expires_at__gt=now)
+    ).select_related("category", "created_by")
 
     # Filter by category
     category_slug = request.GET.get("category")

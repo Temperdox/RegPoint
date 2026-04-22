@@ -60,6 +60,7 @@ class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["date"]
@@ -70,6 +71,10 @@ class Event(models.Model):
     @property
     def is_upcoming(self):
         return self.date > timezone.now()
+
+    @property
+    def is_expired(self):
+        return self.expires_at is not None and self.expires_at <= timezone.now()
 
     @property
     def tickets_sold(self):
