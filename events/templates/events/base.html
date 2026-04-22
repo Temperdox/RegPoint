@@ -210,15 +210,6 @@
                 transparent 100%);
             pointer-events: none;
         }
-        .divider-sm {
-            width: 860px;
-            height: 1px;
-            margin: 4rem auto 0;
-            background: linear-gradient(90deg,
-                transparent 0%,
-                var(--nb-border-strong) 50%,
-                transparent 100%);
-        }
 
         /* --- Auth & onboarding cards --- */
         .auth-card {
@@ -289,6 +280,16 @@
         footer a:focus-visible { color: #fff; text-decoration: underline; }
     </style>
     {% block extra_css %}{% endblock %}
+
+    {% if GOOGLE_ANALYTICS_ID %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ GOOGLE_ANALYTICS_ID }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ GOOGLE_ANALYTICS_ID|escapejs }}', { anonymize_ip: true });
+    </script>
+    {% endif %}
 </head>
 <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>

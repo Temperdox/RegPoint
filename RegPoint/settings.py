@@ -64,6 +64,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "events.context_processors.analytics",
             ],
         },
     },
@@ -216,3 +217,5 @@ if not DEBUG:
         for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
         if o.strip()
     ]
+
+GOOGLE_ANALYTICS_ID = os.environ.get("GOOGLE_ANALYTICS_ID", "")
