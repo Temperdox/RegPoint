@@ -31,29 +31,43 @@
                     <form method="post" action="{% url 'account_login' %}">
                         {% csrf_token %}
                         {% for field in form %}
-                        <div class="mb-3">
-                            <label class="form-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
-                            {% if field.field.widget.input_type == 'password' %}
-                            <input type="password"
-                                   id="id_{{ field.html_name }}"
-                                   name="{{ field.html_name }}"
-                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
-                                   placeholder="{{ field.label }}"
-                                   autocomplete="current-password">
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                            <div class="form-check mb-3">
+                                <input type="checkbox"
+                                       id="id_{{ field.html_name }}"
+                                       name="{{ field.html_name }}"
+                                       class="form-check-input {% if field.errors %}is-invalid{% endif %}"
+                                       {% if field.value %}checked{% endif %}>
+                                <label class="form-check-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                                {% if field.errors %}
+                                <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                             {% else %}
-                            <input type="text"
-                                   id="id_{{ field.html_name }}"
-                                   name="{{ field.html_name }}"
-                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
-                                   value="{{ field.value|default:'' }}"
-                                   placeholder="{{ field.label }}"
-                                   autocomplete="username"
-                                   {% if forloop.first %}autofocus{% endif %}>
+                            <div class="mb-3">
+                                <label class="form-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                                {% if field.field.widget.input_type == 'password' %}
+                                <input type="password"
+                                       id="id_{{ field.html_name }}"
+                                       name="{{ field.html_name }}"
+                                       class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                       placeholder="{{ field.label }}"
+                                       autocomplete="current-password">
+                                {% else %}
+                                <input type="text"
+                                       id="id_{{ field.html_name }}"
+                                       name="{{ field.html_name }}"
+                                       class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                       value="{{ field.value|default:'' }}"
+                                       placeholder="{{ field.label }}"
+                                       autocomplete="username"
+                                       {% if forloop.first %}autofocus{% endif %}>
+                                {% endif %}
+                                {% if field.errors %}
+                                <div class="invalid-feedback">{{ field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                             {% endif %}
-                            {% if field.errors %}
-                            <div class="invalid-feedback">{{ field.errors.0 }}</div>
-                            {% endif %}
-                        </div>
                         {% endfor %}
                         {% if redirect_field_value %}
                         <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
@@ -64,7 +78,7 @@
 
                     <!-- Passkey Login -->
                     <div class="text-center mb-3">
-                        <a href="{% url 'mfa_login_webauthn' %}" class="btn btn-outline-dark w-100">
+                        <a href="{% url 'mfa_login_webauthn' %}" class="btn btn-outline-light w-100">
                             <i class="bi bi-fingerprint me-2"></i>Sign in with Passkey
                         </a>
                     </div>
@@ -80,7 +94,7 @@
                         <a href="{% provider_login_url 'microsoft' %}" class="btn btn-outline-primary">
                             <i class="bi bi-microsoft me-2"></i>Microsoft
                         </a>
-                        <a href="{% provider_login_url 'github' %}" class="btn btn-outline-dark">
+                        <a href="{% provider_login_url 'github' %}" class="btn btn-outline-light">
                             <i class="bi bi-github me-2"></i>GitHub
                         </a>
                     </div>
