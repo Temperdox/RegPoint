@@ -73,6 +73,7 @@ class EmailOTPForm(forms.Form):
 
 
 class UserProfileForm(forms.ModelForm):
+    username = forms.CharField(max_length=150, required=True)
     first_name = forms.CharField(max_length=30, required=True)
     last_name = forms.CharField(max_length=30, required=True)
     email = forms.EmailField(required=True)
@@ -89,16 +90,26 @@ class UserProfileForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop("user", None)
+        self._user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        if user:
-            self.fields["first_name"].initial = user.first_name
-            self.fields["last_name"].initial = user.last_name
-            self.fields["email"].initial = user.email
+        if self._user:
+            self.fields["username"].initial = self._user.username
+            self.fields["first_name"].initial = self._user.first_name
+            self.fields["last_name"].initial = self._user.last_name
+            self.fields["email"].initial = self._user.email
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
         self.fields["avatar"].widget.attrs["class"] = "form-control"
         self.fields["avatar"].widget.attrs["accept"] = "image/*"
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        qs = User.objects.filter(username__iexact=username)
+        if self._user:
+            qs = qs.exclude(pk=self._user.pk)
+        if qs.exists():
+            raise forms.ValidationError("This username is already taken.")
+        return username
 
 
 class ChangeUsernameForm(forms.Form):
