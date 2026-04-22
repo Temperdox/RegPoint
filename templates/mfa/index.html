@@ -1,0 +1,176 @@
+{% extends "events/base.html" %}
+{% load i18n %}
+
+{% block title %}Two-Factor Authentication{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <a href="{% url 'profile' %}"
+                   class="btn btn-sm btn-light auth-back"
+                   aria-label="Back to profile">
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </a>
+                <h1 class="h4 mb-0">Two-Factor Authentication</h1>
+                <span class="invisible" aria-hidden="true">
+                    <i class="bi bi-chevron-left"></i>
+                </span>
+            </div>
+
+            <p class="text-muted small mb-4">
+                Strengthen your account with a second verification step.
+                Add one or more methods below — you'll be asked for it when
+                you sign in.
+            </p>
+
+            {# Authenticator App (TOTP) #}
+            {% if "totp" in MFA_SUPPORTED_TYPES %}
+            <div class="card shadow-sm auth-card mb-3">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                             style="width:48px;height:48px;">
+                            <i class="bi bi-phone fs-4 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <h2 class="h6 mb-0">Authenticator App</h2>
+                                {% if authenticators.totp %}
+                                <span class="badge bg-success-subtle text-success-emphasis">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis">Not set up</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-muted small mb-3">
+                                {% if authenticators.totp %}
+                                Authentication using an authenticator app is active.
+                                {% else %}
+                                Use apps like Authy, 1Password, or Google Authenticator to generate time-based codes.
+                                {% endif %}
+                            </p>
+                            {% if authenticators.totp %}
+                            <a href="{% url 'mfa_deactivate_totp' %}" class="btn btn-sm btn-outline-danger">
+                                Deactivate
+                            </a>
+                            {% else %}
+                            <a href="{% url 'mfa_activate_totp' %}" class="btn btn-sm btn-accent">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Activate
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Security Keys (WebAuthn / passkeys) #}
+            {% if "webauthn" in MFA_SUPPORTED_TYPES %}
+            <div class="card shadow-sm auth-card mb-3">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                             style="width:48px;height:48px;">
+                            <i class="bi bi-fingerprint fs-4 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <h2 class="h6 mb-0">Passkeys &amp; Security Keys</h2>
+                                {% if authenticators.webauthn|length %}
+                                <span class="badge bg-success-subtle text-success-emphasis">
+                                    {{ authenticators.webauthn|length }} active
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis">Not set up</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-muted small mb-3">
+                                {% if authenticators.webauthn|length %}
+                                You have {{ authenticators.webauthn|length }} key{{ authenticators.webauthn|length|pluralize }} registered. Sign in with biometrics, Windows Hello, a hardware key, or a password manager.
+                                {% else %}
+                                Register a passkey — biometrics, Windows Hello, a hardware key, or a password manager — for phishing-resistant sign-in.
+                                {% endif %}
+                            </p>
+                            {% if authenticators.webauthn|length %}
+                            <a href="{% url 'mfa_list_webauthn' %}" class="btn btn-sm btn-outline-primary me-2">
+                                Manage
+                            </a>
+                            <a href="{% url 'mfa_add_webauthn' %}" class="btn btn-sm btn-accent">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add another
+                            </a>
+                            {% else %}
+                            <a href="{% url 'mfa_add_webauthn' %}" class="btn btn-sm btn-accent">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add passkey
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Recovery Codes #}
+            {% if "recovery_codes" in MFA_SUPPORTED_TYPES %}
+            {% with total_count=authenticators.recovery_codes.generate_codes|length unused_count=authenticators.recovery_codes.get_unused_codes|length %}
+            <div class="card shadow-sm auth-card mb-3">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                             style="width:48px;height:48px;">
+                            <i class="bi bi-key fs-4 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <h2 class="h6 mb-0">Recovery Codes</h2>
+                                {% if authenticators.recovery_codes %}
+                                <span class="badge bg-success-subtle text-success-emphasis">
+                                    {{ unused_count }}/{{ total_count }} available
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis">Not generated</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-muted small mb-3">
+                                {% if authenticators.recovery_codes %}
+                                One-time codes to sign in when you can't use your other methods. Store them somewhere safe.
+                                {% else %}
+                                Generate single-use backup codes in case you lose access to your authenticator or passkey.
+                                {% endif %}
+                            </p>
+                            {% if is_mfa_enabled %}
+                                {% if authenticators.recovery_codes %}
+                                    {% if unused_count > 0 and not MFA_RECOVERY_CODES_SHOW_ONCE %}
+                                    <a href="{% url 'mfa_view_recovery_codes' %}" class="btn btn-sm btn-outline-primary me-2">
+                                        View
+                                    </a>
+                                    <a href="{% url 'mfa_download_recovery_codes' %}" class="btn btn-sm btn-outline-primary me-2">
+                                        Download
+                                    </a>
+                                    {% endif %}
+                                {% endif %}
+                                <a href="{% url 'mfa_generate_recovery_codes' %}" class="btn btn-sm btn-accent">
+                                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>
+                                    {% if authenticators.recovery_codes %}Regenerate{% else %}Generate{% endif %}
+                                </a>
+                            {% else %}
+                                <p class="text-muted small fst-italic mb-0">
+                                    Activate an authenticator app or add a passkey first.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+            {% endif %}
+
+            <div class="text-center mt-4">
+                <a href="{% url 'profile' %}" class="btn btn-link" style="color: var(--bs-primary);">
+                    <i class="bi bi-chevron-left me-1" aria-hidden="true"></i>Back to profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
