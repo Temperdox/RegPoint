@@ -8,9 +8,9 @@
     <div class="row justify-content-center">
         <div class="col-lg-7">
             <div class="d-flex align-items-center justify-content-between mb-4">
-                <a href="{% url 'profile' %}"
+                <a href="{% url 'account_settings' %}"
                    class="btn btn-sm btn-light auth-back"
-                   aria-label="Back to profile">
+                   aria-label="Back to account settings">
                     <i class="bi bi-chevron-left" aria-hidden="true"></i>
                 </a>
                 <h1 class="h4 mb-0">Two-Factor Authentication</h1>
@@ -165,9 +165,15 @@
             {% endwith %}
             {% endif %}
 
-            <div class="text-center mt-4">
-                <a href="{% url 'profile' %}" class="btn btn-link" style="color: var(--bs-primary);">
-                    <i class="bi bi-chevron-left me-1" aria-hidden="true"></i>Back to profile
+            <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+                <a href="{% url 'account_settings' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-gear me-1" aria-hidden="true"></i>Account settings
+                </a>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-speedometer2 me-1" aria-hidden="true"></i>Dashboard
+                </a>
+                <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-person me-1" aria-hidden="true"></i>Profile
                 </a>
             </div>
         </div>
