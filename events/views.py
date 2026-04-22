@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views import View
+from django.views.decorators.http import require_http_methods
 
 from .forms import (
     AccountDeleteForm,
@@ -37,6 +38,7 @@ MAX_TICKET_TYPES = 20
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def onboarding_profile(request):
     """Step 2 of 5 — required first + last name."""
     if request.method == "POST":
@@ -62,6 +64,7 @@ def onboarding_profile(request):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def onboarding_phone(request):
     """Step 3 of 5 — optional phone number."""
     if request.method == "POST":
@@ -81,6 +84,7 @@ def onboarding_phone(request):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def onboarding_passkey(request):
     """Step 4 of 5 — optional passkey."""
     if request.method == "POST":
@@ -93,6 +97,7 @@ def onboarding_passkey(request):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def onboarding_mfa(request):
     """Step 5 of 5 — optional authenticator-app MFA."""
     if request.method == "POST":
