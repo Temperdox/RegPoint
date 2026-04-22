@@ -1,0 +1,104 @@
+{% extends "events/base.html" %}
+
+{% block title %}Add Passkey{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5" style="max-width:460px;">
+            <div class="card shadow-sm auth-card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <a href="{% url 'mfa_list_webauthn' %}"
+                           class="btn btn-sm btn-light auth-back"
+                           aria-label="Back to security keys">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
+                        <span class="invisible" aria-hidden="true">
+                            <i class="bi bi-chevron-left"></i>
+                        </span>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width:56px;height:56px;">
+                            <i class="bi bi-fingerprint fs-3 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h1 class="h4 mb-2">Add a passkey</h1>
+                        <p class="text-muted small mb-0">
+                            Name this key so you can tell it apart later. After you click <strong>Add</strong>, your browser will ask how you want to create it — biometrics, Windows Hello, a security key, or a password manager.
+                        </p>
+                    </div>
+
+                    <form method="post" action="{% url 'mfa_add_webauthn' %}" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ form.name.id_for_label }}">Name</label>
+                            <input type="text"
+                                   id="{{ form.name.id_for_label }}"
+                                   name="{{ form.name.html_name }}"
+                                   value="{{ form.name.value|default_if_none:'' }}"
+                                   class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                                   placeholder="e.g., YubiKey, Windows Hello, iPhone"
+                                   autocomplete="off"
+                                   required
+                                   autofocus>
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input type="checkbox"
+                                   id="{{ form.passwordless.id_for_label }}"
+                                   name="{{ form.passwordless.html_name }}"
+                                   class="form-check-input"
+                                   {% if form.passwordless.value %}checked{% endif %}>
+                            <label class="form-check-label" for="{{ form.passwordless.id_for_label }}">
+                                Allow passwordless sign-in
+                            </label>
+                            <div class="form-text">
+                                Lets you sign in with just this key. Requires biometrics or a PIN on the key.
+                            </div>
+                        </div>
+
+                        {# Hidden credential field populated by allauth's WebAuthn JS #}
+                        <input type="hidden"
+                               id="{{ form.credential.id_for_label }}"
+                               name="{{ form.credential.html_name }}"
+                               value="{{ form.credential.value|default_if_none:'' }}">
+
+                        {% if form.credential.errors %}
+                        <div class="alert alert-danger small" role="alert">
+                            {{ form.credential.errors.0 }}
+                        </div>
+                        {% elif form.non_field_errors %}
+                        <div class="alert alert-danger small" role="alert">
+                            {{ form.non_field_errors.0 }}
+                        </div>
+                        {% endif %}
+
+                        <button type="button" id="mfa_webauthn_add" class="btn btn-accent w-100">
+                            <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add passkey
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "mfa/webauthn/snippets/scripts.html" %}
+{{ js_data|json_script:"js_data" }}
+<script data-allauth-onload="allauth.webauthn.forms.addForm" type="application/json">
+{
+    "ids": {
+        "add": "mfa_webauthn_add",
+        "passwordless": "{{ form.passwordless.auto_id }}",
+        "credential": "{{ form.credential.auto_id }}",
+        "data": "js_data"
+    }
+}
+</script>
+{% endblock %}
