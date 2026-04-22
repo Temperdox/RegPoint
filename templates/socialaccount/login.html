@@ -1,0 +1,67 @@
+{% extends "events/base.html" %}
+{% load i18n %}
+
+{% block title %}{% if process == "connect" %}Connect {{ provider.name }}{% else %}Sign In Via {{ provider.name }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5" style="max-width:460px;">
+            <div class="card shadow-sm auth-card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <a href="{% url 'account_login' %}"
+                           class="btn btn-sm btn-light auth-back"
+                           aria-label="Back to sign in">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
+                        <span class="invisible" aria-hidden="true">
+                            <i class="bi bi-chevron-left"></i>
+                        </span>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width:56px;height:56px;">
+                            {% if provider.id == 'google' %}
+                            <i class="bi bi-google fs-3 text-danger" aria-hidden="true"></i>
+                            {% elif provider.id == 'microsoft' %}
+                            <i class="bi bi-microsoft fs-3 text-primary" aria-hidden="true"></i>
+                            {% elif provider.id == 'github' %}
+                            <i class="bi bi-github fs-3 text-dark" aria-hidden="true"></i>
+                            {% else %}
+                            <i class="bi bi-box-arrow-in-right fs-3 text-primary" aria-hidden="true"></i>
+                            {% endif %}
+                        </div>
+                        <h1 class="h4 mb-2">
+                            {% if process == "connect" %}
+                                {% blocktranslate with provider.name as provider %}Connect {{ provider }}{% endblocktranslate %}
+                            {% else %}
+                                {% blocktranslate with provider.name as provider %}Sign In Via {{ provider }}{% endblocktranslate %}
+                            {% endif %}
+                        </h1>
+                        <p class="text-muted small mb-0">
+                            {% if process == "connect" %}
+                                {% blocktranslate with provider.name as provider %}You are about to connect a new third-party account from {{ provider }}.{% endblocktranslate %}
+                            {% else %}
+                                {% blocktranslate with provider.name as provider %}You are about to sign in using a third-party account from {{ provider }}.{% endblocktranslate %}
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-accent w-100">
+                            {% trans "Continue" %}
+                        </button>
+                    </form>
+
+                    <p class="text-center text-muted small mt-3 mb-0">
+                        <a href="{% url 'account_login' %}" class="text-muted">{% trans "Cancel" %}</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
