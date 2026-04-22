@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
-    "allauth.socialaccount.providers.microsoft",
     "allauth.socialaccount.providers.github",
     "allauth.mfa",
     # project
@@ -157,13 +156,6 @@ SOCIALACCOUNT_PROVIDERS = {
         "APP": {
             "client_id": os.environ.get("GOOGLE_CLIENT_ID", ""),
             "secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
-        },
-    },
-    "microsoft": {
-        "SCOPE": ["User.Read"],
-        "APP": {
-            "client_id": os.environ.get("MICROSOFT_CLIENT_ID", ""),
-            "secret": os.environ.get("MICROSOFT_CLIENT_SECRET", ""),
         },
     },
     "github": {
