@@ -24,7 +24,7 @@
 
                     <div class="text-center mb-4">
                         {% if totp_svg %}
-                        <img src="{{ totp_svg|svg_to_data_uri }}" alt="TOTP QR code" style="max-width: 200px; height: auto;">
+                        <img src="{{ totp_svg|svg_to_data_uri }}" alt="TOTP QR code" style="max-width: 200px; height: auto; filter: invert(1);">
                         {% endif %}
                     </div>
 

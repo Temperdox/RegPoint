@@ -2,6 +2,76 @@
 
 {% block title %}My Profile{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<style>
+    .avatar-edit-trigger {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        padding: 0;
+    }
+    .avatar-edit-trigger .avatar-img,
+    .avatar-edit-trigger .avatar-placeholder {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+    }
+    .avatar-edit-trigger .avatar-placeholder {
+        background-color: var(--bs-primary, #0d6efd);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 600;
+    }
+    .avatar-edit-trigger .avatar-pencil {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--bs-primary, #0d6efd);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid var(--nb-surface, #111418);
+        font-size: 14px;
+        transition: transform .12s ease-out;
+    }
+    .avatar-edit-trigger:hover .avatar-pencil,
+    .avatar-edit-trigger:focus-visible .avatar-pencil {
+        transform: scale(1.08);
+    }
+    .avatar-file-input {
+        position: absolute !important;
+        width: 1px; height: 1px;
+        opacity: 0; pointer-events: none;
+    }
+    #avatar-crop-image-wrap {
+        max-height: 60vh;
+        overflow: hidden;
+        background: #000;
+        border-radius: 8px;
+    }
+    .cropper-view-box,
+    .cropper-face {
+        border-radius: 50%;
+    }
+    .cropper-view-box {
+        outline: 2px solid #fff;
+        outline-color: rgba(255,255,255,.95);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
@@ -13,23 +83,30 @@
                         <div class="card-body p-4">
                             <h3 class="mb-4"><i class="bi bi-person-gear me-2"></i>Edit Profile</h3>
 
-                            <!-- Avatar -->
-                            <div class="text-center mb-4">
-                                {% if user.profile.avatar %}
-                                <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle mb-2" style="width:100px;height:100px;object-fit:cover;">
-                                {% else %}
-                                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-2" style="width:100px;height:100px;">
-                                    <span class="text-white display-6">{{ user.first_name|first|default:user.username|first|upper }}</span>
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <form method="post" enctype="multipart/form-data">
+                            <form method="post" enctype="multipart/form-data" id="profile-form">
                                 {% csrf_token %}
-                                <div class="mb-3">
-                                    <label class="form-label" for="{{ form.avatar.id_for_label }}">Profile Picture</label>
-                                    {{ form.avatar }}
-                                    {% if form.avatar.errors %}<div class="text-danger small">{{ form.avatar.errors.0 }}</div>{% endif %}
+
+                                <!-- Avatar (clickable with pencil overlay) -->
+                                <div class="text-center mb-4">
+                                    <label for="{{ form.avatar.id_for_label }}" class="avatar-edit-trigger" aria-label="Change profile picture">
+                                        {% if user.profile.avatar %}
+                                        <img id="avatar-preview" src="{{ user.profile.avatar.url }}" alt="Profile picture" class="avatar-img">
+                                        {% else %}
+                                        <div id="avatar-preview" class="avatar-placeholder">
+                                            <span>{{ user.first_name|first|default:user.username|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <span class="avatar-pencil" aria-hidden="true">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </span>
+                                    </label>
+                                    <input type="file"
+                                           id="{{ form.avatar.id_for_label }}"
+                                           name="{{ form.avatar.html_name }}"
+                                           class="avatar-file-input"
+                                           accept="image/*"
+                                           aria-label="Profile picture file">
+                                    {% if form.avatar.errors %}<div class="text-danger small mt-2">{{ form.avatar.errors.0 }}</div>{% endif %}
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
@@ -192,4 +269,167 @@
         </div>
     </div>
 </div>
+
+<!-- Avatar crop modal -->
+<div class="modal fade" id="avatar-crop-modal" tabindex="-1" aria-hidden="true" aria-labelledby="avatar-crop-label">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="avatar-crop-label">Edit Image</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="avatar-crop-image-wrap">
+                    <img id="avatar-crop-image" alt="" style="max-width:100%;display:block;">
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3 gap-3">
+                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        <i class="bi bi-image text-muted" aria-hidden="true"></i>
+                        <input type="range" id="avatar-zoom" class="form-range flex-grow-1" min="1" max="3" step="0.01" value="1" aria-label="Zoom">
+                        <i class="bi bi-image-fill text-muted" aria-hidden="true"></i>
+                    </div>
+                    <button type="button" id="avatar-rotate" class="btn btn-sm btn-outline-light" aria-label="Rotate 90 degrees">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" id="avatar-reset" class="btn btn-link text-decoration-none">Reset</button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="avatar-apply" class="btn btn-primary">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script>
+(function () {
+    var fileInput = document.getElementById('{{ form.avatar.id_for_label }}');
+    var preview   = document.getElementById('avatar-preview');
+    var modalEl   = document.getElementById('avatar-crop-modal');
+    if (!fileInput || !modalEl || typeof Cropper === 'undefined') return;
+
+    var modal      = new bootstrap.Modal(modalEl);
+    var cropImg    = document.getElementById('avatar-crop-image');
+    var zoomSlider = document.getElementById('avatar-zoom');
+    var rotateBtn  = document.getElementById('avatar-rotate');
+    var resetBtn   = document.getElementById('avatar-reset');
+    var applyBtn   = document.getElementById('avatar-apply');
+
+    var cropper = null;
+    var originalFileName = 'avatar.jpg';
+    var previousObjectUrl = null;
+
+    function destroyCropper() {
+        if (cropper) { cropper.destroy(); cropper = null; }
+    }
+
+    function initCropperWhenReady() {
+        destroyCropper();
+        cropper = new Cropper(cropImg, {
+            aspectRatio: 1,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 1,
+            background: false,
+            movable: true,
+            zoomable: true,
+            scalable: false,
+            rotatable: true,
+            cropBoxMovable: false,
+            cropBoxResizable: false,
+            toggleDragModeOnDblclick: false,
+            ready: function () {
+                zoomSlider.value = 1;
+            },
+            zoom: function (event) {
+                // Keep slider roughly in sync on wheel/pinch zoom; clamp to slider range.
+                var ratio = event.detail.ratio;
+                var base  = cropper.getImageData().naturalWidth
+                    ? cropper.getCanvasData().naturalWidth / cropper.getImageData().naturalWidth
+                    : 1;
+                var effective = ratio / (base || 1);
+                if (effective < 1) effective = 1;
+                if (effective > 3) effective = 3;
+                zoomSlider.value = effective;
+            }
+        });
+    }
+
+    fileInput.addEventListener('change', function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { fileInput.value = ''; return; }
+
+        originalFileName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            cropImg.src = e.target.result;
+            modal.show();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    modalEl.addEventListener('shown.bs.modal', initCropperWhenReady);
+    modalEl.addEventListener('hidden.bs.modal', destroyCropper);
+
+    zoomSlider.addEventListener('input', function () {
+        if (!cropper) return;
+        cropper.zoomTo(parseFloat(this.value));
+    });
+
+    rotateBtn.addEventListener('click', function () {
+        if (cropper) cropper.rotate(90);
+    });
+
+    resetBtn.addEventListener('click', function () {
+        if (!cropper) return;
+        cropper.reset();
+        zoomSlider.value = 1;
+    });
+
+    applyBtn.addEventListener('click', function () {
+        if (!cropper) return;
+        var canvas = cropper.getCroppedCanvas({
+            width: 512,
+            height: 512,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+        });
+        if (!canvas) return;
+        canvas.toBlob(function (blob) {
+            if (!blob) return;
+            var file = new File([blob], originalFileName, { type: 'image/jpeg' });
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            } catch (err) {
+                // Older browsers may not support DataTransfer here; the raw file
+                // the user picked will still be submitted with the form.
+            }
+            if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
+            previousObjectUrl = URL.createObjectURL(blob);
+            if (preview.tagName === 'IMG') {
+                preview.src = previousObjectUrl;
+            } else {
+                var img = document.createElement('img');
+                img.id = 'avatar-preview';
+                img.alt = 'Profile picture';
+                img.className = 'avatar-img';
+                img.src = previousObjectUrl;
+                preview.parentNode.replaceChild(img, preview);
+                preview = img;
+            }
+            modal.hide();
+        }, 'image/jpeg', 0.92);
+    });
+})();
+</script>
 {% endblock %}

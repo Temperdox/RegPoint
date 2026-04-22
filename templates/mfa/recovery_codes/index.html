@@ -23,6 +23,55 @@
                         </div>
                     </div>
                     <p class="text-muted small">{{ unused_codes|length }} codes remaining.</p>
+
+                    {{ unused_codes|json_script:"recovery-codes-data" }}
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" id="copy-codes-btn" class="btn btn-outline-primary">
+                            <i class="bi bi-clipboard me-1"></i><span data-copy-label>Copy</span>
+                        </button>
+                        <button type="button" id="download-codes-btn" class="btn btn-outline-primary">
+                            <i class="bi bi-download me-1"></i>Download
+                        </button>
+                    </div>
+
+                    <script>
+                    (function () {
+                        var dataEl = document.getElementById('recovery-codes-data');
+                        if (!dataEl) return;
+                        var codes;
+                        try { codes = JSON.parse(dataEl.textContent); } catch (e) { return; }
+                        var text = codes.join('\n') + '\n';
+
+                        var copyBtn = document.getElementById('copy-codes-btn');
+                        var copyLabel = copyBtn.querySelector('[data-copy-label]');
+                        copyBtn.addEventListener('click', function () {
+                            var done = function () {
+                                var original = copyLabel.textContent;
+                                copyLabel.textContent = 'Copied';
+                                setTimeout(function () { copyLabel.textContent = original; }, 1500);
+                            };
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(text).then(done, function () {
+                                    window.prompt('Copy these codes:', text);
+                                });
+                            } else {
+                                window.prompt('Copy these codes:', text);
+                            }
+                        });
+
+                        document.getElementById('download-codes-btn').addEventListener('click', function () {
+                            var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'regpoint-recovery-codes.txt';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+                        });
+                    })();
+                    </script>
                     {% endif %}
 
                     <form method="post">
@@ -30,7 +79,7 @@
                         <button type="submit" name="action_generate" class="btn btn-outline-primary">
                             <i class="bi bi-arrow-clockwise me-1"></i>Generate New Codes
                         </button>
-                        <a href="{% url 'profile' %}" class="btn btn-outline-secondary ms-2">Back to Profile</a>
+                        <a href="{% url 'profile' %}" class="btn btn-outline-secondary ms-2" style="color: var(--bs-primary);">Back to Profile</a>
                     </form>
                 </div>
             </div>
