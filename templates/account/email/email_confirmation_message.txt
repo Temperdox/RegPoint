@@ -1,0 +1,8 @@
+{% load account %}{% load i18n %}{% user_display user as user_display %}{% autoescape off %}{{ code }}
+
+{% blocktranslate with site_name=current_site.name %}is your {{ site_name }} verification code.{% endblocktranslate %}
+
+{% blocktranslate %}Enter it in the open browser window to finish setting up your account. If you didn't try to sign up, you can safely ignore this email.{% endblocktranslate %}
+
+— {{ current_site.name }}
+{% endautoescape %}

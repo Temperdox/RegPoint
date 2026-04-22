@@ -31,7 +31,7 @@
                         </div>
                         <h1 class="h4 mb-2">Enter Verification Code</h1>
                         <p class="text-muted small mb-0">
-                            We sent a 6-digit code to
+                            We sent an 8-character code to
                             <strong>{{ email }}</strong>.<br>
                             The code expires shortly — please enter it soon.
                         </p>
@@ -51,27 +51,103 @@
                         <input type="text"
                                id="id_code"
                                name="code"
-                               class="form-control form-control-lg text-center"
-                               style="letter-spacing:.5em;font-variant-numeric:tabular-nums;"
-                               placeholder="000000"
+                               class="form-control form-control-lg text-center text-uppercase"
+                               style="letter-spacing:.35em;font-variant-numeric:tabular-nums;"
+                               placeholder="XXXX-XXXX"
                                autocomplete="one-time-code"
-                               inputmode="numeric"
-                               pattern="[0-9]*"
-                               maxlength="6"
+                               inputmode="text"
+                               pattern="[A-Z0-9]{4}-[A-Z0-9]{4}"
+                               maxlength="9"
+                               spellcheck="false"
+                               autocapitalize="characters"
                                required
                                autofocus>
                         {{ redirect_field }}
                         <button type="submit" class="btn btn-accent w-100 mt-4">Confirm</button>
                     </form>
 
-                    {% if can_resend %}
+                    <script>
+                    (function () {
+                        var input = document.getElementById('id_code');
+                        if (!input) return;
+
+                        // Whitelist allowed characters and format as XXXX-XXXX.
+                        function normalize(raw) {
+                            var cleaned = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                            if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
+                            if (cleaned.length > 4) {
+                                return cleaned.slice(0, 4) + '-' + cleaned.slice(4);
+                            }
+                            return cleaned;
+                        }
+
+                        input.addEventListener('input', function () {
+                            var caretAtEnd = input.selectionStart === input.value.length;
+                            var normalized = normalize(input.value);
+                            if (normalized !== input.value) {
+                                input.value = normalized;
+                                if (caretAtEnd) {
+                                    input.setSelectionRange(normalized.length, normalized.length);
+                                }
+                            }
+                        });
+
+                        input.addEventListener('paste', function (e) {
+                            e.preventDefault();
+                            var text = (e.clipboardData || window.clipboardData).getData('text');
+                            input.value = normalize(text);
+                            input.setSelectionRange(input.value.length, input.value.length);
+                        });
+                    })();
+                    </script>
+
                     <form id="resend-form" method="post" action="{% url 'account_email_verification_sent' %}" class="mt-2">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="resend">
                         {{ redirect_field }}
-                        <button type="submit" class="btn btn-link w-100 text-muted small">Request a new code</button>
+                        <button id="resend-btn"
+                                type="submit"
+                                class="btn btn-link w-100 text-muted small"
+                                disabled>
+                            <span data-resend-label>Resend in 0:30</span>
+                        </button>
                     </form>
-                    {% endif %}
+
+                    <script>
+                    (function () {
+                        var btn = document.getElementById('resend-btn');
+                        if (!btn) return;
+                        var label = btn.querySelector('[data-resend-label]');
+                        var STORAGE_KEY = 'regpoint_resend_unlock_at';
+                        var COOLDOWN_MS = 30 * 1000;
+
+                        var unlockAt = parseInt(sessionStorage.getItem(STORAGE_KEY) || '0', 10);
+                        var now = Date.now();
+                        if (!unlockAt || unlockAt < now) {
+                            unlockAt = now + COOLDOWN_MS;
+                            sessionStorage.setItem(STORAGE_KEY, String(unlockAt));
+                        }
+
+                        function tick() {
+                            var remaining = Math.max(0, unlockAt - Date.now());
+                            if (remaining <= 0) {
+                                btn.disabled = false;
+                                label.textContent = 'Request a new code';
+                                return;
+                            }
+                            var s = Math.ceil(remaining / 1000);
+                            var mm = Math.floor(s / 60);
+                            var ss = String(s % 60).padStart(2, '0');
+                            label.textContent = 'Resend in ' + mm + ':' + ss;
+                            setTimeout(tick, 250);
+                        }
+                        tick();
+
+                        document.getElementById('resend-form').addEventListener('submit', function () {
+                            sessionStorage.setItem(STORAGE_KEY, String(Date.now() + COOLDOWN_MS));
+                        });
+                    })();
+                    </script>
 
                     <form method="post" action="{% url 'account_logout' %}" class="mt-2">
                         {% csrf_token %}

@@ -1,0 +1,1 @@
+{% load i18n %}{% blocktranslate %}Confirmation email sent to {{ email }} from Nexbridgeregpoint@gmail.com. If you don't see it within a minute, check your spam or junk folder.{% endblocktranslate %}
