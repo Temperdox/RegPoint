@@ -1,46 +1,142 @@
 {% extends "events/base.html" %}
+{% load allauth %}
 
 {% block title %}Two-Factor Authentication{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-5">
+        <div class="col-md-5" style="max-width:460px;">
             <div class="card shadow-sm auth-card">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <a href="{% url 'account_login' %}"
-                           class="btn btn-sm btn-light auth-back"
-                           aria-label="Back to login">
-                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
-                        </a>
+                        <form method="post" action="{% url 'account_logout' %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'account_login' %}">
+                            <button type="submit"
+                                    class="btn btn-sm btn-light auth-back"
+                                    aria-label="Back to sign in">
+                                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                            </button>
+                        </form>
                         <span class="invisible" aria-hidden="true">
                             <i class="bi bi-chevron-left"></i>
                         </span>
                     </div>
-                    <h1 class="h3 text-center mb-4"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>Two-Factor Authentication</h1>
-                    <p class="text-muted text-center">Enter the 6-digit code from your authenticator app.</p>
 
-                    <form method="post">
+                    <div class="text-center mb-4">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width:56px;height:56px;">
+                            <i class="bi bi-shield-lock fs-3 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h1 class="h4 mb-2">Two-Factor Authentication</h1>
+                        <p class="text-muted small mb-0" id="mfa-helper">
+                            Enter the 6-digit code from your authenticator app.
+                        </p>
+                    </div>
+
+                    <!-- Primary form: TOTP / recovery code -->
+                    <form method="post" action="{% url 'mfa_authenticate' %}">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <input type="text" name="code" class="form-control form-control-lg text-center"
-                                   placeholder="000000" autocomplete="one-time-code" inputmode="numeric"
-                                   pattern="[0-9]*" required autofocus>
+                            <label class="form-label visually-hidden" for="id_code">Code</label>
+                            <input type="text"
+                                   id="id_code"
+                                   name="code"
+                                   class="form-control form-control-lg text-center"
+                                   style="letter-spacing:.25em;font-variant-numeric:tabular-nums;"
+                                   placeholder="000000"
+                                   autocomplete="one-time-code"
+                                   inputmode="numeric"
+                                   pattern="[A-Za-z0-9-]*"
+                                   required
+                                   autofocus>
                             {% if form.code.errors %}
-                            <div class="text-danger small mt-1">{{ form.code.errors.0 }}</div>
+                            <div class="text-danger small mt-2">{{ form.code.errors.0 }}</div>
+                            {% elif form.non_field_errors %}
+                            <div class="text-danger small mt-2">{{ form.non_field_errors.0 }}</div>
                             {% endif %}
                         </div>
-                        <button type="submit" class="btn btn-accent w-100 mb-3">Verify</button>
+                        <button type="submit" class="btn btn-accent w-100">Verify &amp; sign in</button>
                     </form>
 
-                    <hr>
-                    <div class="text-center">
-                        <a href="{% url 'mfa_view_recovery_codes' %}" class="text-muted small">Use a recovery code instead</a>
+                    <!-- Alternate methods -->
+                    {% if webauthn_form or "recovery_codes" in MFA_SUPPORTED_TYPES %}
+                    <div class="d-flex align-items-center my-4" role="separator" aria-label="or">
+                        <div class="flex-grow-1 border-top"></div>
+                        <span class="px-3 text-muted small">or use another method</span>
+                        <div class="flex-grow-1 border-top"></div>
                     </div>
+
+                    <div class="d-grid gap-2">
+                        {% if webauthn_form %}
+                        <button type="button"
+                                id="mfa_webauthn_authenticate"
+                                form="webauthn_form"
+                                class="btn btn-outline-dark"
+                                style="color:#fff;">
+                            <i class="bi bi-fingerprint me-2" aria-hidden="true"></i>Use a passkey or security key
+                        </button>
+                        {% endif %}
+
+                        {% if "recovery_codes" in MFA_SUPPORTED_TYPES %}
+                        <button type="button"
+                                id="mfa-use-recovery"
+                                class="btn btn-outline-secondary"
+                                style="color:#fff;">
+                            <i class="bi bi-key me-2" aria-hidden="true"></i>Use a recovery code
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% if webauthn_form %}
+<form id="webauthn_form" method="post" action="{% url 'mfa_authenticate' %}" class="d-none">
+    {% csrf_token %}
+    {{ webauthn_form.credential }}
+</form>
+{{ js_data|json_script:"js_data" }}
+{% include "mfa/webauthn/snippets/scripts.html" %}
+<script data-allauth-onload="allauth.webauthn.forms.authenticateForm" type="application/json">
+{
+    "ids": {
+        "authenticate": "mfa_webauthn_authenticate",
+        "credential": "{{ webauthn_form.credential.auto_id }}",
+        "data": "js_data"
+    }
+}
+</script>
+{% endif %}
+
+<script>
+(function () {
+    var recoveryBtn = document.getElementById('mfa-use-recovery');
+    var codeInput   = document.getElementById('id_code');
+    var helper      = document.getElementById('mfa-helper');
+    if (!recoveryBtn || !codeInput) return;
+
+    var inRecoveryMode = false;
+    recoveryBtn.addEventListener('click', function () {
+        inRecoveryMode = !inRecoveryMode;
+        if (inRecoveryMode) {
+            codeInput.placeholder = 'XXXX-XXXX';
+            codeInput.setAttribute('inputmode', 'text');
+            helper.textContent = 'Enter one of your saved recovery codes.';
+            recoveryBtn.innerHTML = '<i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Use my authenticator code';
+        } else {
+            codeInput.placeholder = '000000';
+            codeInput.setAttribute('inputmode', 'numeric');
+            helper.textContent = 'Enter the 6-digit code from your authenticator app.';
+            recoveryBtn.innerHTML = '<i class="bi bi-key me-2" aria-hidden="true"></i>Use a recovery code';
+        }
+        codeInput.value = '';
+        codeInput.focus();
+    });
+})();
+</script>
 {% endblock %}
