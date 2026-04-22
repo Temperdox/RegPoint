@@ -38,7 +38,6 @@
                 mask-image: inherit;
     }
     .rp-hero > .container { position: relative; z-index: 2; }
-    .rp-hero::after { z-index: 3; }
     @media (prefers-reduced-motion: reduce) {
         #particles-js { display: none; }
     }
@@ -47,6 +46,7 @@
         position: absolute;
         left: 0; right: 0; bottom: -1px;
         height: 80px;
+        z-index: 3;
         clip-path: ellipse(70% 100% at 50% 100%);
     }
     .rp-hero h1 {
@@ -180,7 +180,8 @@
             </div>
 
             <div class="col-md-6">
-                <div class="rp-preview" role="img" aria-label="Preview of the RegPoint organizer dashboard showing active events, registrations, and categories">
+                <figure class="rp-preview" aria-label="Preview of the RegPoint organizer dashboard showing active events, registrations, and categories">
+                    <figcaption class="visually-hidden">Preview of the RegPoint organizer dashboard showing active events, registrations, and categories</figcaption>
                     <div class="rp-p-head">
                         <span class="rp-p-dot"></span>
                         <span class="rp-p-dot"></span>
@@ -216,7 +217,7 @@
                         </div>
                         <span class="price">$49</span>
                     </div>
-                </div>
+                </figure>
             </div>
         </div>
     </div>
@@ -346,7 +347,7 @@
         crossorigin="anonymous"></script>
 <script>
 (function () {
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         return;
     }
     if (typeof particlesJS !== 'function') { return; }

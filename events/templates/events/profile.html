@@ -90,7 +90,7 @@
                                 <div class="text-center mb-4">
                                     <label for="{{ form.avatar.id_for_label }}" class="avatar-edit-trigger" aria-label="Change profile picture">
                                         {% if user.profile.avatar %}
-                                        <img id="avatar-preview" src="{{ user.profile.avatar.url }}" alt="Profile picture" class="avatar-img">
+                                        <img id="avatar-preview" src="{{ user.profile.avatar.url }}" alt="Your profile" class="avatar-img">
                                         {% else %}
                                         <div id="avatar-preview" class="avatar-placeholder">
                                             <span>{{ user.first_name|first|default:user.username|first|upper }}</span>
@@ -386,7 +386,7 @@
 
     zoomSlider.addEventListener('input', function () {
         if (!cropper) return;
-        cropper.zoomTo(parseFloat(this.value));
+        cropper.zoomTo(Number.parseFloat(this.value));
     });
 
     rotateBtn.addEventListener('click', function () {
@@ -416,8 +416,7 @@
                 dt.items.add(file);
                 fileInput.files = dt.files;
             } catch (err) {
-                // Older browsers may not support DataTransfer here; the raw file
-                // the user picked will still be submitted with the form.
+                console.warn('DataTransfer unavailable; submitting original file', err);
             }
             if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
             previousObjectUrl = URL.createObjectURL(blob);
@@ -426,7 +425,7 @@
             } else {
                 var img = document.createElement('img');
                 img.id = 'avatar-preview';
-                img.alt = 'Profile picture';
+                img.alt = 'Your profile';
                 img.className = 'avatar-img';
                 img.src = previousObjectUrl;
                 preview.parentNode.replaceChild(img, preview);

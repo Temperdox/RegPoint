@@ -320,15 +320,15 @@
                 <ul class="navbar-nav ms-auto align-items-lg-center">
                     {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-                           aria-expanded="false">
+                        <button class="nav-link dropdown-toggle btn btn-link" type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false">
                             {% if user.profile.avatar %}
                             <img src="{{ user.profile.avatar.url }}" alt="" class="rounded-circle me-1" style="width:28px;height:28px;object-fit:cover;">
                             {% else %}
                             <i class="bi bi-person-circle me-1" aria-hidden="true"></i>
                             {% endif %}
                             <span>{{ user.get_full_name|default:user.username }}</span>
-                        </a>
+                        </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2" aria-hidden="true"></i>Profile</a></li>
                             <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="bi bi-grid me-2" aria-hidden="true"></i>Dashboard</a></li>

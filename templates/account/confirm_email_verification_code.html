@@ -73,7 +73,7 @@
 
                         // Whitelist allowed characters and format as XXXX-XXXX.
                         function normalize(raw) {
-                            var cleaned = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                            var cleaned = String(raw).toUpperCase().replaceAll(/[^A-Z0-9]/g, '');
                             if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
                             if (cleaned.length > 4) {
                                 return cleaned.slice(0, 4) + '-' + cleaned.slice(4);
@@ -94,7 +94,7 @@
 
                         input.addEventListener('paste', function (e) {
                             e.preventDefault();
-                            var text = (e.clipboardData || window.clipboardData).getData('text');
+                            var text = (e.clipboardData || globalThis.clipboardData).getData('text');
                             input.value = normalize(text);
                             input.setSelectionRange(input.value.length, input.value.length);
                         });
@@ -121,7 +121,7 @@
                         var STORAGE_KEY = 'regpoint_resend_unlock_at';
                         var COOLDOWN_MS = 30 * 1000;
 
-                        var unlockAt = parseInt(sessionStorage.getItem(STORAGE_KEY) || '0', 10);
+                        var unlockAt = Number.parseInt(sessionStorage.getItem(STORAGE_KEY) || '0', 10);
                         var now = Date.now();
                         if (!unlockAt || unlockAt < now) {
                             unlockAt = now + COOLDOWN_MS;

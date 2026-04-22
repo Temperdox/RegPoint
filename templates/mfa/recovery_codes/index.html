@@ -39,23 +39,32 @@
                         var dataEl = document.getElementById('recovery-codes-data');
                         if (!dataEl) return;
                         var codes;
-                        try { codes = JSON.parse(dataEl.textContent); } catch (e) { return; }
+                        try {
+                            codes = JSON.parse(dataEl.textContent);
+                        } catch (err) {
+                            console.error('Failed to parse recovery codes', err);
+                            return;
+                        }
                         var text = codes.join('\n') + '\n';
 
                         var copyBtn = document.getElementById('copy-codes-btn');
                         var copyLabel = copyBtn.querySelector('[data-copy-label]');
+
+                        function flashCopied() {
+                            var original = copyLabel.textContent;
+                            copyLabel.textContent = 'Copied';
+                            setTimeout(function () { copyLabel.textContent = original; }, 1500);
+                        }
+
+                        function fallbackPrompt() {
+                            globalThis.prompt('Copy these codes:', text);
+                        }
+
                         copyBtn.addEventListener('click', function () {
-                            var done = function () {
-                                var original = copyLabel.textContent;
-                                copyLabel.textContent = 'Copied';
-                                setTimeout(function () { copyLabel.textContent = original; }, 1500);
-                            };
                             if (navigator.clipboard && navigator.clipboard.writeText) {
-                                navigator.clipboard.writeText(text).then(done, function () {
-                                    window.prompt('Copy these codes:', text);
-                                });
+                                navigator.clipboard.writeText(text).then(flashCopied, fallbackPrompt);
                             } else {
-                                window.prompt('Copy these codes:', text);
+                                fallbackPrompt();
                             }
                         });
 
@@ -67,7 +76,7 @@
                             a.download = 'regpoint-recovery-codes.txt';
                             document.body.appendChild(a);
                             a.click();
-                            document.body.removeChild(a);
+                            a.remove();
                             setTimeout(function () { URL.revokeObjectURL(url); }, 0);
                         });
                     })();

@@ -62,10 +62,10 @@
 
                     <!-- Alternate methods -->
                     {% if webauthn_form or "recovery_codes" in MFA_SUPPORTED_TYPES %}
-                    <div class="d-flex align-items-center my-4" role="separator" aria-label="or">
-                        <div class="flex-grow-1 border-top"></div>
+                    <div class="d-flex align-items-center my-4">
+                        <hr class="flex-grow-1 m-0" aria-hidden="true">
                         <span class="px-3 text-muted small">or use another method</span>
-                        <div class="flex-grow-1 border-top"></div>
+                        <hr class="flex-grow-1 m-0" aria-hidden="true">
                     </div>
 
                     <div class="d-grid gap-2">

@@ -374,174 +374,184 @@
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>
 <script>
-    (function () {
-        // --- Height sync: ticket card matches event info card on lg+ ---
-        var left = document.getElementById('event-info-card');
-        var right = document.getElementById('ticket-card');
+(function () {
+    function strHash(s) {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) {
+            h = ((h << 5) - h) + s.codePointAt(i);
+            h = Math.trunc(h);
+        }
+        return Math.abs(h);
+    }
 
-        function syncHeight() {
-            if (!left || !right) return;
-            if (window.innerWidth < 992) { right.style.minHeight = ''; return; }
+    function formatShort(n) {
+        if (n >= 1000) {
+            const k = n / 1000;
+            return (k >= 10 ? Math.round(k) : k.toFixed(1).replaceAll(/\.0$/g, '')) + 'k';
+        }
+        return n.toLocaleString();
+    }
+
+    function readJSON(key) {
+        try {
+            return JSON.parse(localStorage.getItem(key)) || [];
+        } catch (err) {
+            console.warn('Could not read ' + key, err);
+            return [];
+        }
+    }
+
+    function writeJSON(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (err) {
+            console.warn('Could not persist ' + key, err);
+        }
+    }
+
+    function setupHeightSync() {
+        const left = document.getElementById('event-info-card');
+        const right = document.getElementById('ticket-card');
+        if (!left || !right) return;
+        function sync() {
+            if (globalThis.innerWidth < 992) { right.style.minHeight = ''; return; }
             right.style.minHeight = '';
-            var h = left.getBoundingClientRect().height;
-            right.style.minHeight = h + 'px';
+            right.style.minHeight = left.getBoundingClientRect().height + 'px';
         }
-        syncHeight();
-        window.addEventListener('resize', syncHeight);
-        window.addEventListener('load', syncHeight);
-        if ('ResizeObserver' in window && left) {
-            new ResizeObserver(syncHeight).observe(left);
+        sync();
+        globalThis.addEventListener('resize', sync);
+        globalThis.addEventListener('load', sync);
+        if ('ResizeObserver' in globalThis) {
+            new ResizeObserver(sync).observe(left);
+        }
+    }
+
+    function setupShareButton() {
+        const btn = document.getElementById('share-btn');
+        if (!btn) return;
+        btn.addEventListener('click', async function () {
+            const url = globalThis.location.href;
+            const title = document.title;
+            if (navigator.share) {
+                try { await navigator.share({ title, url }); }
+                catch (err) { console.debug('Share dismissed', err); }
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(url);
+                const origLabel = btn.getAttribute('aria-label');
+                btn.classList.add('is-copied');
+                btn.setAttribute('aria-label', 'Link copied to clipboard');
+                const icon = btn.querySelector('.bi');
+                const origIconClass = icon.className;
+                icon.className = 'bi bi-check2';
+                setTimeout(function () {
+                    btn.classList.remove('is-copied');
+                    btn.setAttribute('aria-label', origLabel);
+                    icon.className = origIconClass;
+                }, 1500);
+            } catch (err) {
+                console.warn('Clipboard write failed', err);
+            }
+        });
+    }
+
+    function setupFavoriteButton() {
+        const btn = document.getElementById('favorite-btn');
+        if (!btn) return;
+        const slug = btn.dataset.slug;
+        const KEY = 'regpoint_favorites';
+        function render(isFav) {
+            btn.classList.toggle('is-favorited', isFav);
+            btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+            btn.setAttribute('aria-label', isFav ? 'Remove from favorites' : 'Save to favorites');
+            const icon = btn.querySelector('.bi');
+            if (icon) icon.className = isFav ? 'bi bi-heart-fill' : 'bi bi-heart';
+        }
+        render(readJSON(KEY).includes(slug));
+        btn.addEventListener('click', function () {
+            const favs = readJSON(KEY);
+            const idx = favs.indexOf(slug);
+            if (idx === -1) favs.push(slug);
+            else favs.splice(idx, 1);
+            writeJSON(KEY, favs);
+            render(favs.includes(slug));
+        });
+    }
+
+    function setupFollowOrganizer() {
+        const KEY = 'regpoint_followed_organizers';
+        const btn = document.querySelector('.organizer-follow-btn');
+        const followersEl = document.querySelector('.organizer-followers');
+        const hostingEl = document.querySelector('.organizer-hosting');
+        const attendeesEl = document.querySelector('.organizer-attendees');
+        if (!btn || !followersEl) return;
+
+        const username = btn.dataset.username;
+        const baseFollowers = (strHash(username) % 4900) + 100;
+        const baseAttendees = (strHash(username + '_attendees') % 14000) + 1000;
+
+        if (hostingEl && hostingEl.dataset.joined) {
+            const joined = new Date(hostingEl.dataset.joined).getTime();
+            const years = Math.max(0, Math.floor((Date.now() - joined) / 31557600000));
+            hostingEl.textContent = (years >= 1 ? years + 'y' : '<1y') + ' hosting';
+        }
+        if (attendeesEl) {
+            attendeesEl.textContent = formatShort(baseAttendees) + ' total attendees';
         }
 
-        // --- Share button ---
-        var shareBtn = document.getElementById('share-btn');
-        if (shareBtn) {
-            shareBtn.addEventListener('click', async function () {
-                var url = window.location.href;
-                var title = document.title;
-                if (navigator.share) {
-                    try { await navigator.share({ title: title, url: url }); } catch (e) { /* user cancelled */ }
-                    return;
-                }
-                try {
-                    await navigator.clipboard.writeText(url);
-                    var origLabel = shareBtn.getAttribute('aria-label');
-                    shareBtn.classList.add('is-copied');
-                    shareBtn.setAttribute('aria-label', 'Link copied to clipboard');
-                    var icon = shareBtn.querySelector('.bi');
-                    var origIconClass = icon.className;
-                    icon.className = 'bi bi-check2';
-                    setTimeout(function () {
-                        shareBtn.classList.remove('is-copied');
-                        shareBtn.setAttribute('aria-label', origLabel);
-                        icon.className = origIconClass;
-                    }, 1500);
-                } catch (e) { /* clipboard denied */ }
-            });
+        function renderFollow() {
+            const following = readJSON(KEY).includes(username);
+            const count = baseFollowers + (following ? 1 : 0);
+            followersEl.textContent = formatShort(count) + ' follower' + (count === 1 ? '' : 's');
+            btn.classList.toggle('is-following', following);
+            btn.setAttribute('aria-pressed', following ? 'true' : 'false');
+            btn.querySelector('.follow-label').textContent = following ? 'Following' : 'Follow';
         }
-
-        // --- Favorite button (localStorage only) ---
-        var favBtn = document.getElementById('favorite-btn');
-        if (favBtn) {
-            var slug = favBtn.dataset.slug;
-            var KEY = 'regpoint_favorites';
-            function getFavs() {
-                try { return JSON.parse(localStorage.getItem(KEY)) || []; }
-                catch (e) { return []; }
-            }
-            function setFavs(arr) {
-                try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {}
-            }
-            function render(isFav) {
-                favBtn.classList.toggle('is-favorited', isFav);
-                favBtn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
-                favBtn.setAttribute('aria-label', isFav ? 'Remove from favorites' : 'Save to favorites');
-                var icon = favBtn.querySelector('.bi');
-                if (icon) icon.className = isFav ? 'bi bi-heart-fill' : 'bi bi-heart';
-            }
-            render(getFavs().indexOf(slug) !== -1);
-            favBtn.addEventListener('click', function () {
-                var favs = getFavs();
-                var idx = favs.indexOf(slug);
-                if (idx === -1) { favs.push(slug); }
-                else { favs.splice(idx, 1); }
-                setFavs(favs);
-                render(favs.indexOf(slug) !== -1);
-            });
-        }
-
-        // --- Follow organizer (localStorage only) ---
-        function strHash(s) {
-            var h = 0;
-            for (var i = 0; i < s.length; i++) {
-                h = ((h << 5) - h) + s.charCodeAt(i);
-                h |= 0;
-            }
-            return Math.abs(h);
-        }
-        var FOLLOWED_KEY = 'regpoint_followed_organizers';
-        function getFollowed() {
-            try { return JSON.parse(localStorage.getItem(FOLLOWED_KEY)) || []; }
-            catch (e) { return []; }
-        }
-        function setFollowed(arr) {
-            try { localStorage.setItem(FOLLOWED_KEY, JSON.stringify(arr)); } catch (e) {}
-        }
-        function formatShort(n) {
-            if (n >= 1000) {
-                var k = n / 1000;
-                return (k >= 10 ? Math.round(k) : k.toFixed(1).replace(/\.0$/, '')) + 'k';
-            }
-            return n.toLocaleString();
-        }
-        var followBtn = document.querySelector('.organizer-follow-btn');
-        var followersEl = document.querySelector('.organizer-followers');
-        var hostingEl = document.querySelector('.organizer-hosting');
-        var attendeesEl = document.querySelector('.organizer-attendees');
-        if (followBtn && followersEl) {
-            var username = followBtn.dataset.username;
-            var hashA = strHash(username);
-            var hashB = strHash(username + '_attendees');
-            var baseFollowers = (hashA % 4900) + 100;      // 100–4999
-            var baseAttendees = (hashB % 14000) + 1000;    // 1000–14999
-
-            if (hostingEl) {
-                var joined = hostingEl.dataset.joined;
-                if (joined) {
-                    var years = Math.max(0, Math.floor((Date.now() - new Date(joined).getTime()) / 31557600000));
-                    hostingEl.textContent = (years >= 1 ? years + 'y' : '<1y') + ' hosting';
-                }
-            }
-            if (attendeesEl) {
-                attendeesEl.textContent = formatShort(baseAttendees) + ' total attendees';
-            }
-
-            function renderFollow() {
-                var following = getFollowed().indexOf(username) !== -1;
-                var count = baseFollowers + (following ? 1 : 0);
-                followersEl.textContent = formatShort(count) + ' follower' + (count === 1 ? '' : 's');
-                followBtn.classList.toggle('is-following', following);
-                followBtn.setAttribute('aria-pressed', following ? 'true' : 'false');
-                followBtn.querySelector('.follow-label').textContent = following ? 'Following' : 'Follow';
-            }
+        renderFollow();
+        btn.addEventListener('click', function () {
+            const followed = readJSON(KEY);
+            const idx = followed.indexOf(username);
+            if (idx === -1) followed.push(username);
+            else followed.splice(idx, 1);
+            writeJSON(KEY, followed);
             renderFollow();
-            followBtn.addEventListener('click', function () {
-                var followed = getFollowed();
-                var idx = followed.indexOf(username);
-                if (idx === -1) { followed.push(username); }
-                else { followed.splice(idx, 1); }
-                setFollowed(followed);
-                renderFollow();
-            });
-        }
+        });
+    }
 
-        // --- Leaflet map ---
-        var mapEl = document.getElementById('event-map');
-        if (mapEl && typeof L !== 'undefined') {
-            var MA_POINTS = [
-                [42.3601, -71.0589, 'Boston'],
-                [42.3736, -71.1097, 'Cambridge'],
-                [42.3876, -71.0995, 'Somerville'],
-                [42.2626, -71.8023, 'Worcester'],
-                [42.1015, -72.5898, 'Springfield'],
-                [42.5195, -70.8967, 'Salem'],
-                [41.9584, -70.6673, 'Plymouth'],
-                [42.0584, -70.1787, 'Provincetown'],
-                [42.3732, -72.5199, 'Amherst'],
-                [42.6334, -71.3162, 'Lowell']
-            ];
-            var slug = mapEl.dataset.slug || '';
-            var sum = 0;
-            for (var i = 0; i < slug.length; i++) { sum += slug.charCodeAt(i); }
-            var pt = MA_POINTS[sum % MA_POINTS.length];
-            var map = L.map(mapEl, { scrollWheelZoom: true }).setView([pt[0], pt[1]], 13);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                maxZoom: 19,
-                subdomains: 'abcd'
-            }).addTo(map);
-            L.marker([pt[0], pt[1]]).addTo(map).bindPopup(pt[2]);
-        }
-    })();
+    function setupMap() {
+        const mapEl = document.getElementById('event-map');
+        if (!mapEl || typeof L === 'undefined') return;
+        const points = [
+            [42.3601, -71.0589, 'Boston'],
+            [42.3736, -71.1097, 'Cambridge'],
+            [42.3876, -71.0995, 'Somerville'],
+            [42.2626, -71.8023, 'Worcester'],
+            [42.1015, -72.5898, 'Springfield'],
+            [42.5195, -70.8967, 'Salem'],
+            [41.9584, -70.6673, 'Plymouth'],
+            [42.0584, -70.1787, 'Provincetown'],
+            [42.3732, -72.5199, 'Amherst'],
+            [42.6334, -71.3162, 'Lowell']
+        ];
+        const slug = mapEl.dataset.slug || '';
+        let sum = 0;
+        for (let i = 0; i < slug.length; i++) sum += slug.codePointAt(i);
+        const pt = points[sum % points.length];
+        const map = L.map(mapEl, { scrollWheelZoom: true }).setView([pt[0], pt[1]], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 19,
+            subdomains: 'abcd'
+        }).addTo(map);
+        L.marker([pt[0], pt[1]]).addTo(map).bindPopup(pt[2]);
+    }
+
+    setupHeightSync();
+    setupShareButton();
+    setupFavoriteButton();
+    setupFollowOrganizer();
+    setupMap();
+})();
 </script>
 {% endblock %}
